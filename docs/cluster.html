@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cluster mode · Reachmap</title>
+  <meta name="description" content="Reachmap cluster mode: scanning live Kubernetes objects via kubectl, the RBAC it needs, and the invariant that it never reads Secrets.">
+  <meta property="og:title" content="Cluster mode · Reachmap">
+  <meta property="og:description" content="Reachmap cluster mode: scanning live Kubernetes objects via kubectl, the RBAC it needs, and the invariant that it never reads Secrets.">
+  <meta property="og:type" content="website">
+  <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+  <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../index.html">
+      <span class="mark">&#9679;</span> reachmap
+      <span class="ver">v0.3</span>
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">Overview</a>
+      <a href="../docs/index.html" aria-current="page">Documentation</a>
+      <a class="gh" href="https://github.com/reachmap/reachmap.dev">GitHub</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg></button>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap docs">
+<nav class="docs-nav" aria-label="Documentation">
+  <div class="group">Documentation</div>
+  <ul>
+    <li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/quickstart.html">Quickstart</a></li><li><a href="../docs/detectors.html">Detectors</a></li><li><a href="../docs/cluster.html" aria-current="page">Cluster mode</a></li><li><a href="../docs/ci.html">CI &amp; policy</a></li><li><a href="../docs/catalog.html">Catalog</a></li>
+  </ul>
+  <div class="group">Repository</div>
+  <ul>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/README.md">README</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design notes</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/LANDSCAPE.md">Landscape survey</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a></li>
+  </ul>
+</nav><article class="docs-body">
+<h1>Cluster mode</h1>
+<p class="page-lede">Reading a live cluster through kubectl &mdash; and why it never reads Secrets.</p>
+
+<p>Cluster mode reads live objects instead of a directory. Everything else &mdash; the
+detectors, the catalog, the output formats &mdash; is identical.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">scan a cluster</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">@cluster</span>
+<span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">@cluster</span> <span class="t-flag">-context</span> <span class="t-cmd">prod-eu</span> <span class="t-flag">-namespace</span> <span class="t-cmd">payments</span>
+<span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">@cluster</span> <span class="t-flag">-namespace</span> <span class="t-cmd">payments</span> <span class="t-flag">-namespace</span> <span class="t-cmd">checkout</span> <span class="t-flag">-format</span> <span class="t-cmd">json</span> <span class="t-flag">-o</span> <span class="t-cmd">prod.json</span></code></pre>
+</div>
+
+<h2 id="it-never-reads-secrets">It never reads Secrets<a class="anchor" href="#it-never-reads-secrets" aria-label="Permalink">#</a></h2>
+<div class="note">
+This is a product invariant, not a default. Reachmap records that a secret-borne dependency
+exists and resolves it through the objects that <em>describe</em> the Secret &mdash; a cloud
+resource CR, an <code>ExternalSecret</code> &mdash; never by reading the credential itself.
+A test enforces it.
+</div>
+
+<p>The original design for this layer proposed reading Secrets, classifying the value, and
+discarding it. That is now recorded as rejected. A dependency mapper that pulls plaintext
+credentials out of a production cluster is a credential-exfiltration tool wearing a different
+hat, and &ldquo;we discard it&rdquo; is a promise about code that an operator cannot verify at
+the moment they are being asked to grant the RBAC.</p>
+
+<h2 id="why-kubectl-and-not-client-go">Why <code>kubectl</code> and not client-go<a class="anchor" href="#why-kubectl-and-not-client-go" aria-label="Permalink">#</a></h2>
+<p>This is the largest architectural decision in cluster mode, and it was not close.</p>
+<p>Linking <code>client-go</code> would add roughly fifty modules to a project whose only
+vendored dependency is a YAML parser &mdash; and that property is load-bearing: Reachmap
+builds offline, audits in an afternoon, and ships as one static binary. Shelling out also
+inherits, for free, everything a library would have to reimplement: kubeconfig contexts, exec
+credential plugins for EKS, GKE and AKS, proxies, and impersonation.</p>
+<p>The cost is a runtime dependency on a binary and on its JSON output shape, which is a
+stable versioned API. That is the smaller risk.</p>
+
+<h2 id="what-it-reads">What it reads<a class="anchor" href="#what-it-reads" aria-label="Permalink">#</a></h2>
+<p>Requests are filtered against what the API server actually serves, so a cluster without
+Istio or KEDA costs nothing. Nothing is read speculatively &mdash; on a large cluster each
+extra kind is a real list request.</p>
+<ul>
+  <li><strong>Workloads and routing:</strong> Deployments, StatefulSets, DaemonSets, CronJobs,
+  Jobs, Services, Ingresses, ConfigMaps, ServiceAccounts, PVCs, StorageClasses, NetworkPolicies</li>
+  <li><strong>Mesh and gateway:</strong> Istio <code>ServiceEntry</code>, <code>VirtualService</code>,
+  <code>DestinationRule</code>, <code>Sidecar</code>; Gateway API <code>HTTPRoute</code> and
+  <code>Gateway</code>; <code>CiliumNetworkPolicy</code></li>
+  <li><strong>Autoscaling:</strong> KEDA <code>ScaledObject</code> and <code>ScaledJob</code></li>
+  <li><strong>Secret plumbing:</strong> <code>ExternalSecret</code>, <code>SecretStore</code>,
+  <code>ClusterSecretStore</code>, <code>SecretProviderClass</code> &mdash; the objects that
+  describe Secrets, never Secrets</li>
+  <li><strong>Argo:</strong> <code>Rollout</code></li>
+</ul>
+
+<h2 id="partial-visibility-is-the-normal-case">Partial visibility is the normal case<a class="anchor" href="#partial-visibility-is-the-normal-case" aria-label="Permalink">#</a></h2>
+<p>A scoped service account will not be able to list everything, and that is fine. If a
+batched read is refused, Reachmap retries the kinds one at a time, so one RBAC gap costs one
+resource rather than the whole scan. Each miss becomes a warning on stderr.</p>
+
+<h3 id="a-read-only-role">A read-only role<a class="anchor" href="#a-read-only-role" aria-label="Permalink">#</a></h3>
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">rbac.yaml</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: reachmap-reader}
+rules:
+  - apiGroups: [&quot;&quot;, &quot;apps&quot;, &quot;batch&quot;, &quot;networking.k8s.io&quot;, &quot;storage.k8s.io&quot;]
+    resources: [&quot;*&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;]
+  - apiGroups: [&quot;networking.istio.io&quot;, &quot;keda.sh&quot;, &quot;external-secrets.io&quot;,
+<span class="t-meta">                &quot;gateway.networking.k8s.io&quot;, &quot;cilium.io&quot;, &quot;argoproj.io&quot;,</span>
+<span class="t-meta">                &quot;secrets-store.csi.x-k8s.io&quot;]</span>
+    resources: [&quot;*&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;]
+</code></pre>
+</div>
+
+<div class="note warn">
+The wildcard in the first rule includes <code>secrets</code>. Reachmap will not request them,
+but if your policy is that a credential a process could read is a credential it has, enumerate
+the resources explicitly instead of using <code>"*"</code>.
+</div>
+
+<h2 id="evidence-from-a-cluster-has-no-line-numbers">Evidence from a cluster has no line numbers<a class="anchor" href="#evidence-from-a-cluster-has-no-line-numbers" aria-label="Permalink">#</a></h2>
+<p>&ldquo;Line 8412 of the JSON <code>kubectl</code> printed&rdquo; is not something anyone can
+act on. Each live object becomes its own source &mdash;
+<code>cluster://context/namespace/Kind/name</code> &mdash; and the field path carries the
+precision the line number used to.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">cluster evidence</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>aws rds orders-prod  [<span class="t-meta">postgres/5432</span>, <span class="t-likely">likely</span>, <span class="t-meta">database</span>]
+<span class="t-meta">       cluster://prod-eu/shop/Deployment/orders  spec.template.spec.containers[app].env[DATABASE_URL]</span></code></pre>
+</div>
+
+<h2 id="l1-is-a-stronger-claim-than-l0">L1 is a stronger claim than L0<a class="anchor" href="#l1-is-a-stronger-claim-than-l0" aria-label="Permalink">#</a></h2>
+<p>The same detectors read the same fields either way, but a manifest says what someone
+intends to deploy and a cluster read says what is running. Evidence from cluster mode is
+stamped <code>L1</code> to preserve that difference.</p>
+
+<h2 id="flags">Flags<a class="anchor" href="#flags" aria-label="Permalink">#</a></h2>
+<dl class="kv">
+  <dt>-context NAME</dt><dd>kubeconfig context. Defaults to the current one, whose name also becomes the cluster identity.</dd>
+  <dt>-namespace NS</dt><dd>Restrict to a namespace. Repeatable; default is all namespaces.</dd>
+  <dt>-kubectl PATH</dt><dd>Which <code>kubectl</code> to use.</dd>
+  <dt>-timeout DURATION</dt><dd>Per-request timeout. Default 2 minutes.</dd>
+</dl>
+<div class="page-nav"><a href="detectors.html">&larr; Detectors</a><a href="ci.html">CI &amp; policy &rarr;</a></div></article>
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>Reachmap &mdash; Apache-2.0</span>
+    <a href="https://github.com/reachmap/reachmap.dev">Source</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a>
+    <span class="spacer">Built from the v0.3 tree.</span>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

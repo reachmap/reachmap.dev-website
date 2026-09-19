@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reachmap — map what your Kubernetes workloads reach</title>
+  <meta name="description" content="A dependency mapper for distributed systems. Reads rendered Kubernetes manifests or a live cluster and catalogs every cloud service, internal service and third-party API a workload reaches — with the file and line behind every claim.">
+  <meta property="og:title" content="Reachmap — map what your Kubernetes workloads reach">
+  <meta property="og:description" content="A dependency mapper for distributed systems. Reads rendered Kubernetes manifests or a live cluster and catalogs every cloud service, internal service and third-party API a workload reaches — with the file and line behind every claim.">
+  <meta property="og:type" content="website">
+  <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+  <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/theme-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <span class="mark">&#9679;</span> reachmap
+      <span class="ver">v0.3</span>
+    </a>
+    <nav class="site-nav">
+      <a href="index.html" aria-current="page">Overview</a>
+      <a href="docs/index.html">Documentation</a>
+      <a class="gh" href="https://github.com/reachmap/reachmap.dev">GitHub</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg></button>
+    </nav>
+  </div>
+</header>
+<main id="main">
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Map what your workloads<br><span class="dim">actually reach.</span></h1>
+    <p class="lede">
+      Reachmap reads rendered Kubernetes manifests &mdash; or a live cluster &mdash; and
+      catalogs every <strong>cloud service</strong>, <strong>internal service</strong> and
+      <strong>third-party API</strong> a workload depends on. Every edge carries the file,
+      the line and the field it came from, because the first question anyone asks about a
+      surprising dependency is <em>says who?</em>
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="docs/quickstart.html">Quickstart &rarr;</a>
+      <a class="btn" href="docs/detectors.html">What it detects</a>
+      <a class="btn" href="https://github.com/reachmap/reachmap.dev">Source</a>
+    </div>
+
+    <div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">reachmap scan</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">./manifests</span>
+
+<span class="t-ident">[workload]</span><span class="t-src"> platform/ingestor deployment</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>aws sqs events-inbound  [<span class="t-meta">https</span>, <span class="t-likely">likely</span>, <span class="t-meta">messaging</span>]
+<span class="t-meta">       platform.yaml:104  spec.triggers[0].metadata.queueURL</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>aws msk events  [<span class="t-meta">kafka/9094</span>, <span class="t-likely">likely</span>, <span class="t-meta">messaging</span>]
+<span class="t-meta">       platform.yaml:109  spec.triggers[1].metadata.bootstrapServers</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>aws rds ingestor-db  [<span class="t-likely">likely</span>, <span class="t-meta">database</span>]
+<span class="t-meta">       platform.yaml:32  spec.template.spec.containers[app].env[DATABASE_URL].valueFrom.secretKeyRef</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>gcp sql analytics-primary  [<span class="t-meta">postgres</span>, <span class="t-conf">confirmed</span>, <span class="t-meta">database</span>]
+<span class="t-meta">       platform.yaml:46  spec.template.spec.containers[cloud-sql-proxy].args[1]</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>aws ebs ingestor-spool  [<span class="t-conf">confirmed</span>, <span class="t-meta">storage</span>]
+<span class="t-meta">       platform.yaml:62  spec.template.spec.volumes[0].persistentVolumeClaim.claimName</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-ext">[external] </span>Stripe  [<span class="t-likely">likely</span>, <span class="t-meta">allowed</span>, <span class="t-meta">payments</span>, <span class="t-meta">pci</span>]
+<span class="t-meta">       platform.yaml:116  spec.hosts</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-ext">[external] </span>HashiCorp Vault (vault.internal.acme.io)  [<span class="t-conf">confirmed</span>, <span class="t-meta">secrets</span>]
+<span class="t-meta">       platform.yaml:83  spec.provider.vault.server</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-ident">[identity] </span>iam-role platform-ingestor  [<span class="t-conf">confirmed</span>, <span class="t-meta">identity</span>]
+<span class="t-meta">       platform.yaml:10  metadata.annotations[eks.amazonaws.com/role-arn]</span>
+    <span class="t-arrow">-&gt;</span> <span class="t-opaque">[opaque]   </span>secret platform/ingestor-api-creds [in vault.internal.acme.io at platform/ingestor/stripe-token]  [<span class="t-poss">possible</span>]
+<span class="t-meta">       platform.yaml:37  spec.template.spec.containers[app].env[VAULT_TOKEN_PATH].valueFrom.secretKeyRef</span>
+
+<span class="t-meta">1 files, 10 objects, 1 workloads, 12 dependencies</span>
+<span class="t-meta">9 classified targets, 1 unclassified, 1 secret-borne, 0 suppressed</span></code></pre>
+</div>
+
+    <p class="sec-intro" style="margin-bottom:0">
+      No agent, no cluster, no credentials. That scan is a directory of YAML and a
+      single static binary.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">The problem</div>
+    <h2>A pod spec is not the dependency list</h2>
+    <p class="sec-intro">
+      Most of what a service reaches is written down somewhere other than its container
+      environment &mdash; in an autoscaler, a sidecar argument, a Secret it mounts, or an
+      annotation on its ServiceAccount. Four of Reachmap's detectors exist because those
+      dependencies are otherwise invisible.
+    </p>
+    <div class="grid grid-2">
+      <div class="cell">
+        <span class="tag">keda-trigger</span>
+        <h3>The queue nobody can see</h3>
+        <p>A worker that only consumes from SQS has no inbound Service, no ingress and no
+        endpoint in its own environment. The queue lives in the autoscaler's configuration.
+        Without reading KEDA triggers, that workload looks like it depends on nothing.</p>
+      </div>
+      <div class="cell">
+        <span class="tag">proxy-sidecar</span>
+        <h3>The database behind localhost</h3>
+        <p>A workload behind a Cloud SQL proxy sees <code>localhost:5432</code>, which every
+        correct scanner suppresses as loopback. The real instance is named only in the
+        sidecar's arguments, as <code>project:region:instance</code>.</p>
+      </div>
+      <div class="cell">
+        <span class="tag">secret-ref</span>
+        <h3>The connection string in a Secret</h3>
+        <p>A workload mounting <code>orders-db-creds</code> is an unresolved blind spot. When an
+        ACK, Crossplane or Config Connector resource in the same scan names that Secret,
+        Reachmap resolves it to the actual RDS instance &mdash; without ever reading the Secret.</p>
+      </div>
+      <div class="cell">
+        <span class="tag">workload-identity</span>
+        <h3>The role a workload assumes</h3>
+        <p>IRSA, GKE Workload Identity and their Azure equivalent are declared
+        workload&rarr;cloud edges sitting in the manifest. The landscape survey found no
+        vendor documenting them. They are also what an IAM-policy expansion needs first.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">In CI</div>
+    <h2>Gate the pull request that adds a dependency</h2>
+    <p class="sec-intro">
+      Scanning is useful once. Diffing is useful every day. Reachmap compares the graph on a
+      branch against the graph on main and fails the build when a change quietly introduces a
+      new third-party API, a new cloud service, or a dependency nobody has classified.
+    </p>
+
+    <div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">reachmap diff</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">diff</span> <span class="t-cmd">base.json</span> <span class="t-cmd">head.json</span> <span class="t-flag">-fail-on</span> <span class="t-cmd">new-external</span>
+
+<span class="t-meta">1 new dependency</span>
+<span class="t-add">  + shop/orders  -&gt;  api.riskscore.io  [https, possible, unclassified]</span>
+<span class="t-meta">      orders.yaml:37</span>
+
+<span class="t-meta">1 policy trigger fired</span>
+<span class="t-warn">  ! [new-external] shop/orders -&gt; api.riskscore.io: new external API dependency</span>
+
+<span class="t-prompt">$</span> <span class="t-cmd">echo</span> <span class="t-cmd">$?</span>
+3</code></pre>
+</div>
+
+    <div class="grid grid-3">
+      <div class="cell">
+        <h3>Removals never fail</h3>
+        <p>Every gate fires only on <em>added</em> dependencies. Dropping one is cleanup, and a
+        tool that fails CI for it would punish exactly the change teams should be making.</p>
+      </div>
+      <div class="cell">
+        <h3>Findings get their own exit code</h3>
+        <p><code>0</code> clean, <code>1</code> tool error, <code>2</code> usage, <code>3</code>
+        findings. Collapsing findings into <code>1</code> makes a crash indistinguishable from a
+        tripped gate, and those need different responses at 3am.</p>
+      </div>
+      <div class="cell">
+        <h3>Output CI already reads</h3>
+        <p>A markdown comment for the pull request, SARIF for the security tab, Graphviz DOT
+        and Backstage catalog entities for everything downstream.</p>
+      </div>
+    </div>
+    <p style="margin-top:1.5rem"><a href="docs/ci.html">Set up the gate &rarr;</a></p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Design</div>
+    <h2>Three decisions that shape everything else</h2>
+    <div class="grid grid-3">
+      <div class="cell">
+        <h3>Every edge carries its evidence</h3>
+        <p>File, line, field, and the redacted snippet it came from. A tool that cannot answer
+        <em>says who?</em> gets abandoned the first time it surprises someone. Credentials are
+        stripped at parse time, before anything reaches the graph.</p>
+      </div>
+      <div class="cell">
+        <h3>Precision over recall</h3>
+        <p>A graph people believe beats a graph that is complete. <code>LOG_LEVEL=info</code> does
+        not become a dependency on a service called &ldquo;info&rdquo;. Bare tokens count only when
+        the key they sit under says so.</p>
+      </div>
+      <div class="cell">
+        <h3>Confidence is a bucket, not a float</h3>
+        <p><code>confirmed</code> / <code>likely</code> / <code>possible</code>. An edge a user
+        disagrees with has to be arguable, and &ldquo;0.73&rdquo; is not an argument.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Blind spots are counted, not hidden.</strong> When a connection string lives in a
+      Secret that nothing in the scan describes, Reachmap records that a dependency exists and
+      that it cannot see the target. A blind spot you can count is one you can argue about.
+      Cluster mode does not change this: it never reads Secrets either.
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Install</div>
+    <h2>One binary, one vendored dependency</h2>
+    <p class="sec-intro">
+      Reachmap is Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds
+      offline, audits in an afternoon and ships as one static binary.
+    </p>
+
+    <div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">build from source</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">git</span> <span class="t-cmd">clone</span> <span class="t-cmd">https://github.com/reachmap/reachmap.dev</span>
+<span class="t-prompt">$</span> <span class="t-cmd">cd</span> <span class="t-cmd">reachmap.dev</span>
+<span class="t-prompt">$</span> <span class="t-cmd">go</span> <span class="t-cmd">build</span> <span class="t-flag">-mod=vendor</span> <span class="t-flag">-o</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">./cmd/reachmap</span>
+<span class="t-prompt">$</span> <span class="t-cmd">./reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">./manifests</span></code></pre>
+</div>
+
+    <div class="note warn">
+      <strong>A note on <code>go install</code>.</strong> The module path is
+      <code>reachmap.dev</code>, which needs that domain to serve a <code>go-import</code> meta
+      tag before <code>go install reachmap.dev/cmd/reachmap@latest</code> can resolve. The tag is
+      already in this site's HTML, so it starts working the moment the domain points here.
+      Until then, build from source.
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Roadmap</div>
+    <h2>Where this is going</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Phase</th><th>Scope</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>v0.1</code></td><td>Manifest detectors, endpoint catalog, ARN/DSN parsers, JSON + Mermaid + text</td><td>Shipped</td></tr>
+          <tr><td><code>v0.2</code></td><td><code>diff</code>, <code>policy check</code>, SARIF/DOT/Backstage exporters, GitHub Action</td><td>Shipped</td></tr>
+          <tr><td><code>v0.3</code></td><td>Mesh, KEDA, cloud resource CRs, External Secrets, workload identity, storage, registries; live cluster mode; full GCP + Azure</td><td>Shipped</td></tr>
+          <tr><td><code>v0.4</code></td><td>IAM policy expansion &mdash; resolve an identity into the resources it may reach</td><td>Next</td></tr>
+          <tr><td><code>v0.5</code></td><td>Runtime adapters (Hubble, Coroot, OTel, VPC/DNS logs); shadow and stale reports</td><td>Planned</td></tr>
+          <tr><td><code>v0.6</code></td><td>Source-code scanning: Go, Java, Python, Node</td><td>Planned</td></tr>
+          <tr><td><code>v1.0</code></td><td>Blast-radius traversal with criticality, environment diffing, <code>reachmap serve</code></td><td>Planned</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Known limits</div>
+    <h2>Stated plainly</h2>
+    <p class="sec-intro">
+      A tool that overclaims here loses trust the first time it is wrong.
+    </p>
+    <ul style="color:var(--fg-mute); max-width:46rem; line-height:1.8">
+      <li><strong>Secrets.</strong> A connection string in a Secret is invisible unless something in
+      the scan describes that Secret. Reachmap does not read Secrets, in cluster mode either.</li>
+      <li><strong>Dynamically constructed endpoints.</strong>
+      <code>os.getenv("REGION") + ".internal.foo.com"</code> cannot be resolved statically.</li>
+      <li><strong>Unrendered templates.</strong> Refused with a message rather than scanned, because
+      analysing them produces dependencies on literal <code>&#123;&#123; .Values.host &#125;&#125;</code> strings.</li>
+      <li><strong>Permitted reach is not observed reach.</strong> Mesh and network-policy edges say a
+      workload <em>may</em> reach something. Proving it does needs runtime data.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>Reachmap &mdash; Apache-2.0</span>
+    <a href="https://github.com/reachmap/reachmap.dev">Source</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a>
+    <span class="spacer">Built from the v0.3 tree.</span>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

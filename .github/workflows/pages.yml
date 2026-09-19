@@ -1,0 +1,65 @@
+# Deploy the site to GitHub Pages.
+#
+# The site is committed as plain static HTML, so this workflow only uploads it —
+# there is no build step to break, and the repository is viewable as-is. The
+# generator under tools/ is for editing, not for deployment.
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a queued deploy finish rather than cancelling it; a half-deployed site is
+# worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerating produces no diff
+        run: |
+          python3 tools/build.py
+          if ! git diff --quiet; then
+            echo "::error::Committed HTML is out of date. Run 'python3 tools/build.py' and commit the result."
+            git --no-pager diff --stat
+            exit 1
+          fi
+
+      - name: No root-absolute links
+        run: |
+          # The site is served from a project subpath, so a link starting with
+          # "/" resolves to the org root and 404s. Relative links work at both
+          # the project URL and a custom domain later.
+          if grep -rnE '(href|src)="/[^/]' --include='*.html' .; then
+            echo "::error::Root-absolute link found; use a relative path."
+            exit 1
+          fi
+
+      - name: Every internal link resolves
+        run: python3 tools/checklinks.py
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

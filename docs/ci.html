@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gating a pull request · Reachmap</title>
+  <meta name="description" content="Reachmap in CI: dependency diffs, gates, the GitHub Action, policy rules as data, and SARIF output.">
+  <meta property="og:title" content="Gating a pull request · Reachmap">
+  <meta property="og:description" content="Reachmap in CI: dependency diffs, gates, the GitHub Action, policy rules as data, and SARIF output.">
+  <meta property="og:type" content="website">
+  <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+  <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../index.html">
+      <span class="mark">&#9679;</span> reachmap
+      <span class="ver">v0.3</span>
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">Overview</a>
+      <a href="../docs/index.html" aria-current="page">Documentation</a>
+      <a class="gh" href="https://github.com/reachmap/reachmap.dev">GitHub</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg></button>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap docs">
+<nav class="docs-nav" aria-label="Documentation">
+  <div class="group">Documentation</div>
+  <ul>
+    <li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/quickstart.html">Quickstart</a></li><li><a href="../docs/detectors.html">Detectors</a></li><li><a href="../docs/cluster.html">Cluster mode</a></li><li><a href="../docs/ci.html" aria-current="page">CI &amp; policy</a></li><li><a href="../docs/catalog.html">Catalog</a></li>
+  </ul>
+  <div class="group">Repository</div>
+  <ul>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/README.md">README</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design notes</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/LANDSCAPE.md">Landscape survey</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a></li>
+  </ul>
+</nav><article class="docs-body">
+<h1>Gating a pull request</h1>
+<p class="page-lede">Diff two graphs, fail on what got added, and evaluate policy as data.</p>
+
+<p>Scanning tells you what you have. Diffing tells you what a change is about to add, which
+is the thing you can still do something about.</p>
+
+<h2 id="diff-two-graphs">Diff two graphs<a class="anchor" href="#diff-two-graphs" aria-label="Permalink">#</a></h2>
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">reachmap diff</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">diff</span> <span class="t-cmd">base.json</span> <span class="t-cmd">head.json</span> <span class="t-flag">-fail-on</span> <span class="t-cmd">new-external</span>
+
+<span class="t-meta">1 new dependency</span>
+<span class="t-add">  + shop/orders  -&gt;  api.riskscore.io  [https, possible, unclassified]</span>
+<span class="t-meta">      orders.yaml:37</span>
+
+<span class="t-meta">1 policy trigger fired</span>
+<span class="t-warn">  ! [new-external] shop/orders -&gt; api.riskscore.io: new external API dependency</span>
+
+<span class="t-prompt">$</span> <span class="t-cmd">echo</span> <span class="t-cmd">$?</span>
+3</code></pre>
+</div>
+
+<p>Graphs are matched on <code>(from, to, relation)</code>. A change to a dependency's port or
+protocol is the same dependency with a different detail, so it surfaces as a <em>changed</em>
+edge rather than as a removal plus an addition &mdash; otherwise the real signal gets buried in
+a busy diff.</p>
+
+<h3 id="gates">Gates<a class="anchor" href="#gates" aria-label="Permalink">#</a></h3>
+<p><code>-fail-on</code> takes one or more of these. All of them fire only on <strong>added</strong>
+dependencies.</p>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Gate</th><th>Trips when the change adds&hellip;</th></tr></thead>
+  <tbody>
+    <tr><td><code>none</code></td><td>Never. Report only.</td></tr>
+    <tr><td><code>any</code></td><td>Any change at all, including a changed detail.</td></tr>
+    <tr><td><code>new-dependency</code></td><td>Any new edge.</td></tr>
+    <tr><td><code>new-external</code></td><td>A third-party API.</td></tr>
+    <tr><td><code>new-cloud</code></td><td>A cloud resource.</td></tr>
+    <tr><td><code>new-unclassified</code></td><td>An endpoint no catalog rule recognises.</td></tr>
+    <tr><td><code>new-compliance</code></td><td>A dependency in a regulated scope (PCI, PII).</td></tr>
+    <tr><td><code>new-secret-borne</code></td><td>A dependency whose target is invisible.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>A good first gate is <code>new-external,new-unclassified</code>: it catches the two changes
+a reviewer most wants to be told about and almost never fires on routine work.</p>
+
+<h3 id="formats">Formats<a class="anchor" href="#formats" aria-label="Permalink">#</a></h3>
+<p><code>-format markdown</code> is shaped as a pull-request comment.
+<code>-format sarif</code> uploads to the GitHub security tab. <code>text</code> and
+<code>json</code> are also available.</p>
+
+<h2 id="the-github-action">The GitHub Action<a class="anchor" href="#the-github-action" aria-label="Permalink">#</a></h2>
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">.github/workflows/dependency-gate.yml</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>name: Dependency gate
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  reachmap:
+    runs-on: ubuntu-latest
+    steps:
+<span class="t-meta">      - uses: actions/checkout@v4</span>
+<span class="t-meta">        with:</span>
+<span class="t-meta">          fetch-depth: 0          # the diff needs the base commit</span>
+
+<span class="t-meta">      - uses: actions/setup-go@v5</span>
+<span class="t-meta">        with:</span>
+<span class="t-meta">          go-version: &#x27;1.22&#x27;</span>
+
+<span class="t-meta">      - id: reachmap</span>
+<span class="t-meta">        uses: reachmap/reachmap.dev@v0</span>
+<span class="t-meta">        continue-on-error: true   # comment first, fail the job at the end</span>
+<span class="t-meta">        with:</span>
+<span class="t-meta">          path: manifests</span>
+<span class="t-meta">          base-ref: origin/${{ github.base_ref }}</span>
+<span class="t-meta">          environment: prod</span>
+<span class="t-meta">          fail-on: new-external,new-unclassified,new-compliance</span>
+
+<span class="t-meta">      - name: Comment on the pull request</span>
+<span class="t-meta">        if: always() &amp;&amp; hashFiles(&#x27;reachmap-out/diff.md&#x27;) != &#x27;&#x27;</span>
+<span class="t-meta">        uses: marocchino/sticky-pull-request-comment@v2</span>
+<span class="t-meta">        with:</span>
+<span class="t-meta">          header: reachmap</span>
+<span class="t-meta">          path: reachmap-out/diff.md</span>
+
+<span class="t-meta">      - name: Upload policy findings</span>
+<span class="t-meta">        if: always() &amp;&amp; hashFiles(&#x27;reachmap-out/policy.sarif&#x27;) != &#x27;&#x27;</span>
+<span class="t-meta">        uses: github/codeql-action/upload-sarif@v3</span>
+<span class="t-meta">        with:</span>
+<span class="t-meta">          sarif_file: reachmap-out/policy.sarif</span>
+<span class="t-meta">          category: reachmap-policy</span>
+
+<span class="t-meta">      - name: Fail if a gate tripped</span>
+<span class="t-meta">        if: steps.reachmap.outcome == &#x27;failure&#x27;</span>
+<span class="t-meta">        run: exit 1</span></code></pre>
+</div>
+
+<p>The <code>continue-on-error</code> plus explicit final step is deliberate: a contributor
+should see the comment explaining <em>why</em> the build failed, not just a red X.</p>
+
+<div class="note warn">
+The action installs Reachmap with <code>go install reachmap.dev/cmd/reachmap@latest</code>,
+which needs the <code>reachmap.dev</code> domain to resolve first. Until then, build the
+binary in a prior step and point the action at it.
+</div>
+
+<h2 id="policy-as-data">Policy as data<a class="anchor" href="#policy-as-data" aria-label="Permalink">#</a></h2>
+<p><code>reachmap policy check</code> evaluates governance rules against a saved graph.
+Rules live in <code>.reachmap/policy.yaml</code>; a commented starter policy ships with the
+repository.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">reachmap policy check</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">policy</span> <span class="t-cmd">check</span> <span class="t-cmd">graph.json</span>
+
+<span class="t-warn">warn  compliance-scoped-dependency  platform/ingestor -&gt; Stripe</span>
+<span class="t-meta">      platform.yaml:116</span>
+<span class="t-meta">      This dependency is in a regulated scope. Confirm it is in the audit</span>
+<span class="t-meta">      boundary and that data handling has been reviewed.</span>
+<span class="t-meta">info  secret-borne-dependency  secret platform/ingestor-api-creds (OpaqueSecretRef)</span>
+<span class="t-meta">      platform.yaml:37</span>
+<span class="t-meta">      Dependency exists but its endpoint lives in a Secret, so manifest</span>
+<span class="t-meta">      analysis cannot see the target.</span>
+<span class="t-meta">info  workload-identity-binding  platform-ingestor (Identity)</span>
+<span class="t-meta">      platform.yaml:10</span>
+<span class="t-meta">      Workload assumes a cloud identity. Confirm the role&#x27;s policy is scoped</span>
+<span class="t-meta">      to what this workload actually needs.</span>
+
+<span class="t-meta">0 error, 1 warn, 2 info</span></code></pre>
+</div>
+
+<h3 id="writing-a-rule">Writing a rule<a class="anchor" href="#writing-a-rule" aria-label="Permalink">#</a></h3>
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">.reachmap/policy.yaml</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>rules:
+  # Ban a category, name the approved exceptions. This is how governance rules
+  # actually get adopted.
+  - id: unapproved-payment-processor
+    description: Payment traffic must go through the approved processor.
+    severity: error
+    match:
+<span class="t-meta">      edge:</span>
+<span class="t-meta">        relation: [declared]</span>
+<span class="t-meta">        to:</span>
+<span class="t-meta">          category: [payments]</span>
+    except: [&quot;api.stripe.com&quot;]
+
+  # A budget rather than a ban. Fires only on the overage.
+  - id: external-api-budget
+    description: More third-party APIs than this estate has agreed to carry.
+    severity: warn
+    match:
+<span class="t-meta">      node:</span>
+<span class="t-meta">        kind: [ExternalAPI]</span>
+    max_count: 15</code></pre>
+</div>
+
+<p>Matchers only express what the graph actually knows &mdash; no annotation lookups, no
+manifest re-reads. A rule that appeared to check something the graph cannot see would be worse
+than no rule at all, because it would pass silently.</p>
+
+<h3 id="matcher-fields">Matcher fields<a class="anchor" href="#matcher-fields" aria-label="Permalink">#</a></h3>
+<dl class="kv">
+  <dt>node</dt><dd><code>kind</code>, <code>classified</code>, <code>category</code>, <code>compliance</code>, <code>provider</code>, <code>service</code>, <code>vendor</code>, <code>namespace</code>, <code>name</code> (regex)</dd>
+  <dt>edge</dt><dd><code>relation</code>, <code>protocol</code>, <code>confidence</code>, <code>port</code>, <code>crosses_namespace</code>, plus <code>from</code> and <code>to</code> node matchers</dd>
+  <dt>max_count</dt><dd>Turns the rule into a budget; reports only the overage.</dd>
+  <dt>except</dt><dd>Allowlist. Every list is an OR; every field within a matcher is an AND.</dd>
+</dl>
+
+<p><code>-fail-on</code> sets the severity at or above which findings fail the build:
+<code>error</code>, <code>warn</code> or <code>none</code>.</p>
+
+<h2 id="exporting-to-other-tools">Exporting to other tools<a class="anchor" href="#exporting-to-other-tools" aria-label="Permalink">#</a></h2>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Format</th><th>Goes to</th></tr></thead>
+  <tbody>
+    <tr><td><code>sarif</code></td><td>The GitHub security tab, or any SARIF viewer</td></tr>
+    <tr><td><code>backstage</code></td><td>Backstage catalog entities &mdash; Components and Resources with <code>dependsOn</code></td></tr>
+    <tr><td><code>dot</code></td><td>Graphviz</td></tr>
+    <tr><td><code>mermaid</code></td><td>A README or a doc</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="page-nav"><a href="cluster.html">&larr; Cluster mode</a><a href="catalog.html">Catalog &rarr;</a></div></article>
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>Reachmap &mdash; Apache-2.0</span>
+    <a href="https://github.com/reachmap/reachmap.dev">Source</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a>
+    <span class="spacer">Built from the v0.3 tree.</span>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

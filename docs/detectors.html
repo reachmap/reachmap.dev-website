@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What Reachmap detects · Reachmap</title>
+  <meta name="description" content="The full Reachmap detector table: manifest signals, mesh and policy edges, secret resolution, and what is deliberately suppressed.">
+  <meta property="og:title" content="What Reachmap detects · Reachmap">
+  <meta property="og:description" content="The full Reachmap detector table: manifest signals, mesh and policy edges, secret resolution, and what is deliberately suppressed.">
+  <meta property="og:type" content="website">
+  <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+  <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../index.html">
+      <span class="mark">&#9679;</span> reachmap
+      <span class="ver">v0.3</span>
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">Overview</a>
+      <a href="../docs/index.html" aria-current="page">Documentation</a>
+      <a class="gh" href="https://github.com/reachmap/reachmap.dev">GitHub</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg></button>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap docs">
+<nav class="docs-nav" aria-label="Documentation">
+  <div class="group">Documentation</div>
+  <ul>
+    <li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/quickstart.html">Quickstart</a></li><li><a href="../docs/detectors.html" aria-current="page">Detectors</a></li><li><a href="../docs/cluster.html">Cluster mode</a></li><li><a href="../docs/ci.html">CI &amp; policy</a></li><li><a href="../docs/catalog.html">Catalog</a></li>
+  </ul>
+  <div class="group">Repository</div>
+  <ul>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/README.md">README</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design notes</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/LANDSCAPE.md">Landscape survey</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a></li>
+  </ul>
+</nav><article class="docs-body">
+<h1>What Reachmap detects</h1>
+<p class="page-lede">Every signal it reads, what each one earns, and what it refuses to guess.</p>
+
+<p>A detector is one signal Reachmap reads. Each one is named in the evidence on every edge
+it produces, so an edge you disagree with can be traced to the exact rule that made it.</p>
+
+<h2 id="layer-0-rendered-manifests">Layer 0 &mdash; rendered manifests<a class="anchor" href="#layer-0-rendered-manifests" aria-label="Permalink">#</a></h2>
+<p>No cluster, no credentials, no network. This is the layer that runs on a pull request.</p>
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Detector</th><th>Reads</th><th>Why it earns its place</th></tr></thead>
+  <tbody>
+    <tr><td><code>env-var</code></td><td>Container <code>env</code> values</td><td>URLs, DSNs, hostnames and ARNs, with credentials stripped at parse time</td></tr>
+    <tr><td><code>command-args</code></td><td><code>command</code> and <code>args</code></td><td>Endpoints reach containers this way as often as through env, especially for proxies</td></tr>
+    <tr><td><code>configmap</code></td><td>ConfigMap contents</td><td>Attributed only to workloads that actually consume the key, so one shared ConfigMap does not smear across every workload</td></tr>
+    <tr><td><code>secret-ref</code></td><td><code>secretKeyRef</code>, <code>envFrom</code>, secret volumes</td><td>Resolves against cloud resource CRs and secret stores; records what it cannot resolve</td></tr>
+    <tr><td><code>external-name</code></td><td><code>Service type: ExternalName</code></td><td>An explicit CNAME is an unambiguous declaration</td></tr>
+    <tr><td><code>external-endpoints</code></td><td>Hand-written <code>Endpoints</code> / <code>EndpointSlice</code></td><td>A selector-less Service with manual endpoints points somewhere real</td></tr>
+    <tr><td><code>service-selector</code></td><td>Service selectors</td><td>Structural Service&rarr;workload mapping; excluded from diffs and gates</td></tr>
+    <tr><td><code>keda-trigger</code></td><td>KEDA <code>ScaledObject</code> / <code>ScaledJob</code></td><td>The highest-precision detector: the trigger names the queue, <code>scaleTargetRef</code> names the workload</td></tr>
+    <tr><td><code>istio-serviceentry</code></td><td>Istio <code>ServiceEntry</code></td><td>External hosts the mesh permits</td></tr>
+    <tr><td><code>mesh-routing</code></td><td><code>VirtualService</code>, Gateway API <code>HTTPRoute</code></td><td>Routing destinations outside the scanned set</td></tr>
+    <tr><td><code>netpol-egress</code></td><td>Kubernetes and Cilium egress policy</td><td>Named hosts and specific addresses a workload may reach</td></tr>
+    <tr><td><code>workload-identity</code></td><td>ServiceAccount annotations</td><td>IRSA, GKE Workload Identity, Azure workload identity</td></tr>
+    <tr><td><code>proxy-sidecar</code></td><td>Cloud SQL and AlloyDB proxy arguments</td><td>The only place the instance is named when the app sees <code>localhost</code></td></tr>
+    <tr><td><code>secret-backend</code></td><td>External Secrets Operator, Secrets Store CSI</td><td>The store behind a Secret is itself a hard dependency</td></tr>
+    <tr><td><code>storage</code></td><td>NFS, in-tree cloud volumes, PVC&rarr;StorageClass</td><td>A PVC on <code>ebs.csi.aws.com</code> ties a workload to one AZ in one account</td></tr>
+    <tr><td><code>image-registry</code></td><td>Container image references</td><td>Always present, a real supply-chain dependency, almost never written down</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Plus an ARN parser, a DSN/URI parser, in-cluster DNS resolution, and an
+<a href="catalog.html">endpoint catalog</a> of 142 rules.</p>
+
+<h2 id="layer-1-a-live-cluster">Layer 1 &mdash; a live cluster<a class="anchor" href="#layer-1-a-live-cluster" aria-label="Permalink">#</a></h2>
+<p>The same detectors, run against objects read from a running cluster rather than a
+directory. See <a href="cluster.html">cluster mode</a>.</p>
+
+<h2 id="permitted-is-not-declared">Permitted is not declared<a class="anchor" href="#permitted-is-not-declared" aria-label="Permalink">#</a></h2>
+<p>A mesh <code>ServiceEntry</code> or an egress policy says a workload <em>may</em> reach
+something. Modelling that as a declaration would inflate every graph in a mesh-heavy estate
+with dependencies nobody uses, so those edges carry the relation <code>allowed</code> and the
+text output names it.</p>
+
+<p>This has a consequence that matters more than it sounds. The default policy's
+<code>hardcoded-ip-dependency</code> and <code>unclassified-external-endpoint</code> rules are
+scoped to <code>declared</code> edges &mdash; because a NetworkPolicy egress rule can
+<em>only</em> be written as a CIDR. Erroring on one would penalise the single place where an
+IP literal is the correct answer, and a gate that fires on your security controls is a gate
+people learn to ignore.</p>
+
+<h3 id="wide-cidrs-are-not-nodes">Wide CIDRs are not nodes<a class="anchor" href="#wide-cidrs-are-not-nodes" aria-label="Permalink">#</a></h3>
+<p>Only <code>/32</code> and <code>/128</code> are specific enough to name a dependency. A
+<code>10.0.0.0/8</code> egress rule describes a network boundary, not a thing something
+depends on.</p>
+
+<h2 id="resolving-a-secret-without-reading-it">Resolving a secret without reading it<a class="anchor" href="#resolving-a-secret-without-reading-it" aria-label="Permalink">#</a></h2>
+<p>A workload mounting <code>orders-db-creds</code> is, on its own, an
+<code>OpaqueSecretRef</code>: a dependency that provably exists with a target nobody can name.
+Two things in the same scan can resolve it, and they are not equally strong:</p>
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Join</th><th>What it means</th><th>Confidence</th></tr></thead>
+  <tbody>
+    <tr><td><code>writeConnectionSecretToRef</code></td><td>The operator fills the Secret with the endpoint. A workload mounting it is talking to that resource.</td><td><code>confirmed</code></td></tr>
+    <tr><td><code>masterUserPassword</code> (ACK)</td><td>The CR <em>reads</em> a password from the Secret. A workload reading the same Secret is a strong inference, not a proof.</td><td><code>likely</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>When neither applies, an <code>ExternalSecret</code> still names the store and the remote
+path. &ldquo;This value comes from Vault at <code>platform/ingestor/stripe-token</code>&rdquo; is not
+an endpoint, but it is enough for a person to find one &mdash; a materially different state
+from &ldquo;this is a secret&rdquo;.</p>
+
+<h2 id="what-is-deliberately-suppressed">What is deliberately suppressed<a class="anchor" href="#what-is-deliberately-suppressed" aria-label="Permalink">#</a></h2>
+<p>Suppressed targets are counted in the scan summary rather than silently dropped, so the
+count is auditable.</p>
+<ul>
+  <li><code>localhost</code> and loopback addresses &mdash; not a dependency on anything external.</li>
+  <li><code>example.com</code>, <code>example.org</code> and friends &mdash; placeholders.</li>
+  <li>Unrendered template expressions.</li>
+  <li>Private IP ranges, which are recorded but not classified as external APIs.</li>
+  <li>Bare tokens under keys that do not suggest an endpoint &mdash; this is what stops
+  <code>LOG_LEVEL=info</code> becoming a dependency on a service called &ldquo;info&rdquo;.</li>
+</ul>
+
+<h2 id="in-cluster-resolution-beats-the-catalog">In-cluster resolution beats the catalog<a class="anchor" href="#in-cluster-resolution-beats-the-catalog" aria-label="Permalink">#</a></h2>
+<p>A cluster-local Service named <code>s3</code> is not Amazon S3. And a name like
+<code>orders-db.shop</code> is an in-cluster reference, not a <code>.shop</code> domain &mdash;
+namespace names collide with real gTLDs (<code>shop</code>, <code>app</code>, <code>dev</code>,
+<code>cloud</code>) more often than you would like. Reachmap resolves against the Services it
+actually saw before it consults any rule.</p>
+<div class="page-nav"><a href="quickstart.html">&larr; Quickstart</a><a href="cluster.html">Cluster mode &rarr;</a></div></article>
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>Reachmap &mdash; Apache-2.0</span>
+    <a href="https://github.com/reachmap/reachmap.dev">Source</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a>
+    <span class="spacer">Built from the v0.3 tree.</span>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quickstart · Reachmap</title>
+  <meta name="description" content="Build Reachmap from source, scan rendered Kubernetes manifests, and read the annotated dependency output.">
+  <meta property="og:title" content="Quickstart · Reachmap">
+  <meta property="og:description" content="Build Reachmap from source, scan rendered Kubernetes manifests, and read the annotated dependency output.">
+  <meta property="og:type" content="website">
+  <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+  <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../index.html">
+      <span class="mark">&#9679;</span> reachmap
+      <span class="ver">v0.3</span>
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">Overview</a>
+      <a href="../docs/index.html" aria-current="page">Documentation</a>
+      <a class="gh" href="https://github.com/reachmap/reachmap.dev">GitHub</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg></button>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap docs">
+<nav class="docs-nav" aria-label="Documentation">
+  <div class="group">Documentation</div>
+  <ul>
+    <li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/quickstart.html" aria-current="page">Quickstart</a></li><li><a href="../docs/detectors.html">Detectors</a></li><li><a href="../docs/cluster.html">Cluster mode</a></li><li><a href="../docs/ci.html">CI &amp; policy</a></li><li><a href="../docs/catalog.html">Catalog</a></li>
+  </ul>
+  <div class="group">Repository</div>
+  <ul>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/README.md">README</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design notes</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/LANDSCAPE.md">Landscape survey</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a></li>
+  </ul>
+</nav><article class="docs-body">
+<h1>Quickstart</h1>
+<p class="page-lede">Build it, scan a directory, and read what comes out.</p>
+
+<h2 id="build-it">Build it<a class="anchor" href="#build-it" aria-label="Permalink">#</a></h2>
+<p>Reachmap is Go 1.22 with one vendored dependency, so it builds offline and needs no
+module proxy.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">build</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">git</span> <span class="t-cmd">clone</span> <span class="t-cmd">https://github.com/reachmap/reachmap.dev</span>
+<span class="t-prompt">$</span> <span class="t-cmd">cd</span> <span class="t-cmd">reachmap.dev</span>
+<span class="t-prompt">$</span> <span class="t-cmd">go</span> <span class="t-cmd">build</span> <span class="t-flag">-mod=vendor</span> <span class="t-flag">-o</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">./cmd/reachmap</span>
+<span class="t-prompt">$</span> <span class="t-cmd">./reachmap</span> <span class="t-cmd">version</span></code></pre>
+</div>
+
+<div class="note warn">
+<strong><code>go install</code> is not available yet.</strong> The module path is
+<code>reachmap.dev</code>, and Go resolves a vanity path by fetching a
+<code>go-import</code> meta tag from that domain. The tag is served by this site, but the
+domain is not yet pointed at it, so <code>go install reachmap.dev/cmd/reachmap@latest</code>
+cannot resolve. Build from source until then.
+</div>
+
+<h2 id="scan-a-directory">Scan a directory<a class="anchor" href="#scan-a-directory" aria-label="Permalink">#</a></h2>
+<p>Point it at rendered Kubernetes manifests &mdash; a directory, a single file, or
+<code>-</code> for stdin.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">scan</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">./manifests</span>
+<span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-cmd">./deploy/prod.yaml</span> <span class="t-flag">-env</span> <span class="t-cmd">prod</span>
+<span class="t-prompt">$</span> <span class="t-cmd">cat</span> <span class="t-cmd">prod.yaml</span> <span class="t-cmd">|</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-flag">-</span></code></pre>
+</div>
+
+<h3 id="helm-and-kustomize-must-be-rendered-first">Helm and Kustomize must be rendered first<a class="anchor" href="#helm-and-kustomize-must-be-rendered-first" aria-label="Permalink">#</a></h3>
+<p>Reachmap refuses unrendered templates rather than scanning them. Analysing a template
+produces dependencies on literal <code>&#123;&#123; .Values.host &#125;&#125;</code> strings, which is worse
+than scanning nothing &mdash; it looks like data.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">render first</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">helm</span> <span class="t-cmd">template</span> <span class="t-cmd">.</span> <span class="t-flag">-f</span> <span class="t-cmd">values-prod.yaml</span> <span class="t-cmd">|</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-flag">-</span> <span class="t-flag">-env</span> <span class="t-cmd">prod</span>
+<span class="t-prompt">$</span> <span class="t-cmd">kustomize</span> <span class="t-cmd">build</span> <span class="t-cmd">overlays/prod</span> <span class="t-cmd">|</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">scan</span> <span class="t-flag">-</span></code></pre>
+</div>
+
+<h2 id="read-the-output">Read the output<a class="anchor" href="#read-the-output" aria-label="Permalink">#</a></h2>
+<p>Each line under a workload is one dependency. The bracketed terms are the protocol and
+port where known, the confidence bucket, the relation when it is not a plain declaration,
+and the target's category and compliance scope. The line beneath is the evidence: the file,
+the line, and the exact field.</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">one edge, annotated</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>    <span class="t-arrow">-&gt;</span> <span class="t-cloud">[cloud]    </span>gcp sql analytics-primary  [<span class="t-meta">postgres</span>, <span class="t-conf">confirmed</span>, <span class="t-meta">database</span>]
+<span class="t-meta">       platform.yaml:46  spec.template.spec.containers[cloud-sql-proxy].args[1]</span></code></pre>
+</div>
+
+<p>Read that as: the <code>ingestor</code> workload reaches a GCP Cloud SQL instance named
+<code>analytics-primary</code> over Postgres; the claim is <code>confirmed</code> because the
+manifest names the instance outright; and you can verify it at line 46 of
+<code>platform.yaml</code>, in the second argument of the <code>cloud-sql-proxy</code>
+container.</p>
+
+<h2 id="pick-a-format">Pick a format<a class="anchor" href="#pick-a-format" aria-label="Permalink">#</a></h2>
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Flag</th><th>Output</th><th>For</th></tr></thead>
+  <tbody>
+    <tr><td><code>-format text</code></td><td>The annotated tree above</td><td>Reading it yourself (default)</td></tr>
+    <tr><td><code>-format json</code></td><td>The full graph with all evidence</td><td>Diffing, policy, anything downstream</td></tr>
+    <tr><td><code>-format mermaid</code></td><td>Mermaid <code>flowchart</code></td><td>Dropping into a README or a doc</td></tr>
+    <tr><td><code>-format dot</code></td><td>Graphviz DOT</td><td>Rendering a real diagram</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>reachmap export</code> converts a saved JSON graph into the rest:
+<code>backstage</code> catalog entities, plus all of the above.</p>
+
+<h2 id="useful-flags">Useful flags<a class="anchor" href="#useful-flags" aria-label="Permalink">#</a></h2>
+<dl class="kv">
+  <dt>-o, -out FILE</dt><dd>Write to a file instead of stdout.</dd>
+  <dt>-env NAME</dt><dd>Stamp an environment label on every edge, so two environments can be compared later.</dd>
+  <dt>-cluster NAME</dt><dd>Cluster name used in node identities, so two clusters never collide in a merged graph.</dd>
+  <dt>-include-opaque</dt><dd>Keep secret-borne placeholder nodes. On by default &mdash; the blind spot should be visible.</dd>
+  <dt>-quiet</dt><dd>Suppress warnings on stderr.</dd>
+</dl>
+
+<h2 id="what-to-do-next">What to do next<a class="anchor" href="#what-to-do-next" aria-label="Permalink">#</a></h2>
+<p>Two things are worth doing on the first real scan. Look at the unclassified endpoints
+Reachmap reports at the bottom &mdash; each one is a triage item nobody has reviewed, and a
+<a href="catalog.html">catalog rule</a> waiting to be written. Then
+<a href="ci.html">wire up the pull-request gate</a>, which is what turns a one-off scan into
+something that keeps working.</p>
+<div class="page-nav"><a href="index.html">&larr; Overview</a><a href="detectors.html">Detectors &rarr;</a></div></article>
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>Reachmap &mdash; Apache-2.0</span>
+    <a href="https://github.com/reachmap/reachmap.dev">Source</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a>
+    <span class="spacer">Built from the v0.3 tree.</span>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

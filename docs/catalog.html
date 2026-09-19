@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The endpoint catalog · Reachmap</title>
+  <meta name="description" content="The Reachmap endpoint catalog: how hostnames are classified into named cloud resources and third-party APIs, and how to add a rule.">
+  <meta property="og:title" content="The endpoint catalog · Reachmap">
+  <meta property="og:description" content="The Reachmap endpoint catalog: how hostnames are classified into named cloud resources and third-party APIs, and how to add a rule.">
+  <meta property="og:type" content="website">
+  <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+  <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../index.html">
+      <span class="mark">&#9679;</span> reachmap
+      <span class="ver">v0.3</span>
+    </a>
+    <nav class="site-nav">
+      <a href="../index.html">Overview</a>
+      <a href="../docs/index.html" aria-current="page">Documentation</a>
+      <a class="gh" href="https://github.com/reachmap/reachmap.dev">GitHub</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme"><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg></button>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap docs">
+<nav class="docs-nav" aria-label="Documentation">
+  <div class="group">Documentation</div>
+  <ul>
+    <li><a href="../docs/index.html">Overview</a></li><li><a href="../docs/quickstart.html">Quickstart</a></li><li><a href="../docs/detectors.html">Detectors</a></li><li><a href="../docs/cluster.html">Cluster mode</a></li><li><a href="../docs/ci.html">CI &amp; policy</a></li><li><a href="../docs/catalog.html" aria-current="page">Catalog</a></li>
+  </ul>
+  <div class="group">Repository</div>
+  <ul>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/README.md">README</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design notes</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/LANDSCAPE.md">Landscape survey</a></li>
+    <li><a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a></li>
+  </ul>
+</nav><article class="docs-body">
+<h1>The endpoint catalog</h1>
+<p class="page-lede">142 rules that turn a hostname into a named, categorised dependency.</p>
+
+<p>The catalog is what turns <code>b-1.events.abc123.c2.kafka.eu-west-1.amazonaws.com</code>
+into &ldquo;the MSK cluster <code>events</code>, messaging, AWS, eu-west-1&rdquo;. It is data, not
+code: 142 rules across five YAML files, embedded in the binary at build time.</p>
+
+<div class="table-scroll">
+<table>
+  <thead><tr><th>File</th><th>Rules</th><th>Covers</th></tr></thead>
+  <tbody>
+    <tr><td><code>aws.yaml</code></td><td>36</td><td>RDS, S3, SQS, SNS, MSK, ElastiCache, ECR, OpenSearch, DynamoDB, Secrets Manager&hellip;</td></tr>
+    <tr><td><code>gcp.yaml</code></td><td>26</td><td>Cloud SQL, Spanner, Firestore, Bigtable, Pub/Sub, GCS, Artifact Registry, Secret Manager&hellip;</td></tr>
+    <tr><td><code>azure.yaml</code></td><td>21</td><td>Azure SQL, Cosmos, Service Bus, Key Vault, Blob, ACR, Entra ID, Azure Monitor&hellip;</td></tr>
+    <tr><td><code>managed.yaml</code></td><td>17</td><td>Managed data platforms and the instance metadata service</td></tr>
+    <tr><td><code>thirdparty.yaml</code></td><td>42</td><td>Payments, auth, observability, email, AI APIs</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="unclassified-is-an-output-not-a-failure">Unclassified is an output, not a failure<a class="anchor" href="#unclassified-is-an-output-not-a-failure" aria-label="Permalink">#</a></h2>
+<p>An endpoint no rule recognises is reported, counted, and listed at the end of a scan.
+Each one is a triage item for a security review and a catalog contribution waiting to happen.
+Hiding them would make the tool look more complete and be less useful.</p>
+
+<p>Bare IP addresses are reported separately, because no catalog keyed on hostnames can ever
+name one &mdash; &ldquo;add a rule for <code>52.31.44.7</code>&rdquo; is advice nobody can act on.</p>
+
+<h2 id="adding-a-rule">Adding a rule<a class="anchor" href="#adding-a-rule" aria-label="Permalink">#</a></h2>
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">internal/catalog/data/thirdparty.yaml</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>- id: vendor.riskscore
+  kind: external
+  vendor: RiskScore
+  category: fraud
+  compliance: [pii]
+  priority: 80
+  match: &#x27;^api\.riskscore\.io$&#x27;
+  name: RiskScore</code></pre>
+</div>
+
+<p>For a cloud resource, capture the identity out of the hostname so that two spellings of the
+same thing converge on one node rather than duplicating it:</p>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">a cloud rule with identity</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code>- id: aws.rds.instance
+  kind: cloud
+  provider: aws
+  service: rds
+  resource_type: db
+  category: database
+  priority: 85
+  match: &#x27;^(?P&lt;name&gt;[a-z0-9-]+)\.(?P&lt;uid&gt;[a-z0-9]+)\.(?P&lt;region&gt;[a-z0-9-]+)\.rds\.amazonaws\.com$&#x27;
+  identity: &#x27;arn:aws:rds:{region}:{account}:db:{name}&#x27;
+  name: &#x27;{name}&#x27;
+  protocol: postgres
+  default_port: 5432</code></pre>
+</div>
+
+<h3 id="fields">Fields<a class="anchor" href="#fields" aria-label="Permalink">#</a></h3>
+<dl class="kv">
+  <dt>kind</dt><dd><code>cloud</code> or <code>external</code>.</dd>
+  <dt>match</dt><dd>A regular expression. Tested against the host by default; set <code>match_on: url</code> when the identity lives in the path, as it does for SQS.</dd>
+  <dt>priority</dt><dd>Higher wins. Specific rules sit above the per-provider fallbacks, which are deliberately low.</dd>
+  <dt>identity</dt><dd>A template producing a native identifier &mdash; an ARN. Used as the node URN, so a hostname match and an ARN match converge.</dd>
+  <dt>name</dt><dd>A template over the named capture groups.</dd>
+  <dt>category, compliance</dt><dd>What the endpoint is, and what regulated scope it sits in. <code>compliance</code> is what the <code>new-compliance</code> gate reads.</dd>
+  <dt>protocol, default_port</dt><dd>Annotate the edge when the source did not say.</dd>
+</dl>
+
+<div class="term">
+  <div class="term-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="label">check your rule</span><button class="copy" type="button">copy</button>
+  </div>
+  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">catalog</span> <span class="t-cmd">lint</span>
+catalog OK: 142 rules compiled
+
+<span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">catalog</span> <span class="t-cmd">explain</span> <span class="t-cmd">api.riskscore.io</span></code></pre>
+</div>
+
+<h2 id="one-rule-one-claim">One rule, one claim<a class="anchor" href="#one-rule-one-claim" aria-label="Permalink">#</a></h2>
+<p>Two rules matching the same hostname pattern is an ambiguity dressed up as coverage.
+Azure Event Hubs and Service Bus share the <code>*.servicebus.windows.net</code> zone and the
+hostname genuinely does not say which service a namespace is, so the catalog reports a
+messaging namespace and stops there. Guessing would be wrong half the time.</p>
+
+<p>The same reasoning keeps the instance metadata address provider-neutral: AWS, Azure and GCP
+all serve <code>169.254.169.254</code>, so labelling it as any one of them would be a guess.</p>
+<div class="page-nav"><a href="ci.html">&larr; CI &amp; policy</a><span></span></div></article>
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <span>Reachmap &mdash; Apache-2.0</span>
+    <a href="https://github.com/reachmap/reachmap.dev">Source</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/docs/DESIGN.md">Design</a>
+    <a href="https://github.com/reachmap/reachmap.dev/blob/main/CHANGELOG.md">Changelog</a>
+    <span class="spacer">Built from the v0.3 tree.</span>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

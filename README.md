@@ -1,0 +1,99 @@
+# reachmap.dev-website
+
+The website for [Reachmap](https://github.com/reachmap/reachmap.dev) — a dependency
+mapper for Kubernetes-native distributed systems.
+
+Plain static HTML, no framework, no build step at deploy time. GitHub Pages serves
+the files in this repository as they are.
+
+## Layout
+
+```
+index.html          Landing page
+404.html            Not-found page
+docs/               Quickstart, detectors, cluster mode, CI & policy, catalog
+assets/             style.css, site.js, theme-boot.js
+tools/build.py      Generator — regenerates every HTML file from one template
+tools/checklinks.py Internal link checker, run in CI
+```
+
+## Editing
+
+Six pages share one header, one footer and one nav. Keeping those in sync by hand
+is how a site drifts, so the page bodies live in `tools/build.py` and the HTML is
+generated from them. The generated HTML is committed, which is why deployment needs
+no toolchain.
+
+```bash
+# edit the page body in tools/build.py, then
+python3 tools/build.py
+python3 tools/checklinks.py
+git add -A && git commit -m "docs: ..."
+```
+
+CI fails the build if the committed HTML does not match what the generator produces,
+so the two cannot silently diverge.
+
+Editing `assets/style.css` needs no regeneration.
+
+### Previewing
+
+```bash
+python3 -m http.server 8000
+# http://localhost:8000
+```
+
+## Enabling GitHub Pages
+
+One-time, in this repository:
+
+1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+   The workflow in `.github/workflows/pages.yml` does the rest on every push to `main`.
+2. The site goes live at `https://reachmap.github.io/reachmap.dev-website/`.
+
+The `.nojekyll` file stops Pages running the content through Jekyll, which would
+otherwise ignore any path beginning with an underscore.
+
+## Pointing `reachmap.dev` at it
+
+Not done yet — the domain does not currently resolve. This matters beyond
+appearances: Reachmap's Go module path is `reachmap.dev`, and Go resolves a vanity
+import path by fetching a `go-import` meta tag from that domain over HTTPS. Until
+the domain serves it, `go install reachmap.dev/cmd/reachmap@latest` cannot work, and
+neither can the GitHub Action, which uses `go install` to fetch the binary.
+
+The meta tag is already in every page of this site:
+
+```html
+<meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
+```
+
+So the sequence is:
+
+1. Register `reachmap.dev`.
+2. Add a `CNAME` file at the repository root containing exactly `reachmap.dev`.
+3. Point DNS at GitHub Pages — apex `A` records to `185.199.108.153`,
+   `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (and the matching `AAAA`
+   records `2606:50c0:8000::153`, `:8001::153`, `:8002::153`, `:8003::153`), plus a
+   `CNAME` record for `www` pointing at `reachmap.github.io`.
+4. **Settings → Pages → Custom domain**, enter `reachmap.dev`, then tick
+   **Enforce HTTPS** once the certificate is issued.
+5. Verify the vanity path resolves before tagging a release:
+
+   ```bash
+   curl -s "https://reachmap.dev/?go-get=1" | grep go-import
+   GOPROXY=direct go install reachmap.dev/cmd/reachmap@latest
+   ```
+
+Every link in this site is relative, so it works unchanged at both the project URL
+and the apex domain — no rebuild needed when the domain lands.
+
+### The other prerequisite
+
+`go install` also requires that `github.com/reachmap/reachmap.dev` is **public**.
+The module proxy fetches the repository anonymously; a private repository fails to
+resolve no matter what the meta tag says.
+
+## Licence
+
+Apache-2.0, matching the tool.
