@@ -66,7 +66,10 @@ def _edge(x1, y1, x2, y2, cls="e-line"):
     """A gently curved connector. Straight lines through a fan of eight edges
     read as a starburst; a slight bow keeps them separable."""
     mx = (x1 + x2) / 2
-    return f'<path d="M{x1} {y1} C{mx} {y1}, {mx} {y2}, {x2} {y2}" class="{cls}"/>'
+    # pathLength normalises the curve to 1 unit so a single stroke-dashoffset
+    # value draws any edge at the same rate, whatever its actual length.
+    return (f'<path d="M{x1} {y1} C{mx} {y1}, {mx} {y2}, {x2} {y2}" '
+            f'pathLength="1" class="{cls}"/>')
 
 
 # ---------------------------------------------------------------------------
@@ -92,25 +95,31 @@ def blast_radius():
     dep = [("Stripe", 34, True), ("rds orders-prod", 96, False), ("s3 uploads", 158, False)]
     links = [(0, 0), (0, 1), (1, 0), (1, 2), (2, 2)]
 
-    b = ['<g>']
+    # Emitted in the order the story is told, each phase tagged so the
+    # stylesheet can time it: the estate exists, then one vendor degrades, then
+    # the affected paths light up, then the answer lands.
+    b = ['<g class="br">']
     for si, di in links:
         hot = svc[si][2] and dep[di][2]
         b.append(_edge(150, svc[si][1] + 16, 270, dep[di][1] + 16,
-                       "e-line e-hot" if hot else "e-line"))
+                       "e-line e-hot br-hot" if hot else "e-line br-cold"))
 
-    b.append('<text x="0" y="20" class="d-cap">YOUR SERVICES</text>')
+    b.append('<text x="0" y="20" class="d-cap br-p1">YOUR SERVICES</text>')
     for name, y, hot in svc:
-        b.append(_box(0, y, 150, 32, name, "hit" if hot else ""))
+        b.append(f'<g class="br-p1 {"br-hit" if hot else ""}">'
+                 + _box(0, y, 150, 32, name, "hit" if hot else "") + '</g>')
 
-    b.append('<text x="270" y="20" class="d-cap">WHAT THEY REACH</text>')
+    b.append('<text x="270" y="20" class="d-cap br-p1">WHAT THEY REACH</text>')
     for name, y, down in dep:
-        b.append(_box(270, y, 190, 32, name, "down" if down else ""))
-    b.append('<circle cx="446" cy="50" r="4" class="pulse"/>')
-    b.append('<text x="470" y="44" class="d-note">degraded</text>')
+        b.append(f'<g class="br-p1 {"br-down" if down else ""}">'
+                 + _box(270, y, 190, 32, name, "down" if down else "") + '</g>')
+    b.append('<g class="br-alarm"><circle cx="446" cy="50" r="10" class="pulse-ring"/>'
+             '<circle cx="446" cy="50" r="4" class="pulse"/>'
+             '<text x="470" y="44" class="d-note">degraded</text></g>')
 
-    b.append('<line x1="0" y1="214" x2="560" y2="214" class="d-rule"/>')
-    b.append('<text x="0" y="240" class="d-ask">Stripe is degraded. Who is in it?</text>')
-    b.append('<text x="0" y="264" class="d-ans">checkout and orders. Not search.</text>')
+    b.append('<line x1="0" y1="214" x2="560" y2="214" class="d-rule br-answer"/>')
+    b.append('<text x="0" y="240" class="d-ask br-answer">Stripe is degraded. Who is in it?</text>')
+    b.append('<text x="0" y="264" class="d-ans br-answer">checkout and orders. Not search.</text>')
     b.append('</g>')
 
     return figure(
@@ -120,7 +129,7 @@ def blast_radius():
              "Stripe is marked degraded; the edges from checkout and orders to Stripe are "
              "highlighted, showing those two services are affected and search is not.",
              "".join(b)),
-        min_width=460)
+        min_width=460, cls="dia-seq")
 
 
 def payoff_icon(name):
@@ -176,71 +185,64 @@ def reach_graph():
     picture that restates less than the paragraph above it is decoration, and
     the reader learns to skip the next one.
 
-    So it now shows the three things the text shows and a list cannot:
+    So it shows the three things the text shows and a list cannot: structure
+    (targets grouped by kind behind a coloured rail), confidence (in the edge
+    weight, dashed where nothing names the target), and evidence (the real file
+    and line for every edge).
 
-      * Structure. Targets are grouped by kind behind a coloured rail with a
-        count, which is the taxonomy the legend underneath is trying to teach.
-        The old version encoded kind as a 1px border colour and nothing else.
-      * Confidence, in the edge itself — weight for confirmed against likely,
-        dashed for possible — with a key in what used to be dead space.
-      * Evidence. Every edge gets its file and line in a column of its own,
-        because "every edge carries its evidence" is the product's central
-        claim and the diagram may as well demonstrate it rather than assert it.
+    Each dependency is emitted as one <g> containing its edge, its node and its
+    evidence line. Edges end at x=386 and nodes start at x=404, so nothing
+    overlaps and interleaving them in document order costs nothing — while
+    grouping lets one stagger step reveal a whole row, and one :hover trace an
+    edge back to the row it belongs to without a line of JavaScript.
     """
     ORIGIN_X, ORIGIN_Y = 250, 207
     RAIL_X, NODE_X, NODE_W, EV_X = 388, 404, 316, 736
     ROW_H, ROW_GAP, GROUP_GAP = 40, 6, 32
 
-    b = ['<g>']
-    edges, groups = [], []
-    y = 20
-    for kind, label, rows in REACH:
-        top = y
-        for name, sub, conf, ev in rows:
-            edges.append((y + ROW_H / 2, kind, conf))
-            groups.append(("node", y, kind, name, sub, ev))
-            y += ROW_H + ROW_GAP
-        bottom = y - ROW_GAP
-        groups.append(("rail", top, kind, label, len(rows), bottom))
-        y = bottom + GROUP_GAP
+    b = ['<g class="rg">']
 
-    # edges first, so nodes and rails sit on top of them
-    for ey, kind, conf in edges:
-        b.append(_edge(ORIGIN_X, ORIGIN_Y, RAIL_X - 2, ey, f"rg-edge rg-{conf} e-{kind}"))
-
-    for item in groups:
-        if item[0] == "rail":
-            _, top, kind, label, count, bottom = item
-            b.append(f'<rect x="{RAIL_X}" y="{top}" width="2.5" height="{bottom - top}" '
-                     f'rx="1.25" class="rg-rail rg-{kind}"/>')
-            b.append(f'<text x="{NODE_X}" y="{top - 8}" class="rg-cap rg-{kind}">'
-                     f'{html.escape(label)} &middot; {count}</text>')
-        else:
-            _, ny, kind, name, sub, ev = item
-            b.append(f'<rect x="{NODE_X}" y="{ny}" width="{NODE_W}" height="{ROW_H}" rx="5" '
-                     f'class="rg-node rg-{kind}"/>')
-            b.append(f'<text x="{NODE_X + 14}" y="{ny + 17}" class="rg-name rg-{kind}">'
-                     f'{html.escape(name)}</text>')
-            b.append(f'<text x="{NODE_X + 14}" y="{ny + 31}" class="rg-sub">{html.escape(sub)}</text>')
-            b.append(f'<text x="{EV_X}" y="{ny + 25}" class="rg-ev">{html.escape(ev)}</text>')
-
-    b.append(f'<text x="{EV_X}" y="12" class="rg-cap rg-ev-cap">EVIDENCE</text>')
-
-    # Top-left was empty, and the diagram floated free of the command that
-    # produced it. Naming the input grounds it and balances the column, which
-    # now reads top to bottom: what was scanned, the workload, how to read the
-    # edges.
+    # Left column first, so it sits under nothing and reveals first.
+    b.append('<g class="rg-aside" style="--i:0">')
     b.append('<text x="0" y="14" class="rg-cap">SCANNED</text>')
     b.append('<text x="0" y="40" class="rg-src">./manifests</text>')
     b.append('<text x="0" y="60" class="rg-key">1 file &middot; 10 objects &middot; 1 workload</text>')
-
-    # the subject of the graph, weighted as such
     b.append('<text x="0" y="166" class="rg-cap">WORKLOAD</text>')
-    b.append(f'<rect x="0" y="176" width="250" height="62" rx="6" class="rg-wl"/>')
+    b.append('<rect x="0" y="176" width="250" height="62" rx="6" class="rg-wl"/>')
     b.append('<text x="18" y="203" class="rg-wl-name">platform/ingestor</text>')
     b.append('<text x="18" y="221" class="rg-wl-sub">Deployment &middot; 7 dependencies</text>')
+    b.append('</g>')
 
-    # the key, in what used to be an empty quadrant
+    b.append(f'<text x="{EV_X}" y="12" class="rg-cap rg-ev-cap rg-aside" style="--i:0">EVIDENCE</text>')
+
+    step, y = 1, 20
+    for kind, label, rows in REACH:
+        top = y
+        bottom = top + len(rows) * ROW_H + (len(rows) - 1) * ROW_GAP
+        b.append(f'<g class="rg-grp" style="--i:{step}">')
+        b.append(f'<rect x="{RAIL_X}" y="{top}" width="2.5" height="{bottom - top}" '
+                 f'rx="1.25" class="rg-rail rg-{kind}"/>')
+        b.append(f'<text x="{NODE_X}" y="{top - 8}" class="rg-cap rg-{kind}">'
+                 f'{html.escape(label)} &middot; {len(rows)}</text>')
+        b.append('</g>')
+        step += 1
+
+        for name, sub, conf, ev in rows:
+            b.append(f'<g class="rg-row" style="--i:{step}">')
+            b.append(_edge(ORIGIN_X, ORIGIN_Y, RAIL_X - 2, y + ROW_H / 2,
+                           f"rg-edge rg-{conf} e-{kind}"))
+            b.append(f'<rect x="{NODE_X}" y="{y}" width="{NODE_W}" height="{ROW_H}" rx="5" '
+                     f'class="rg-node rg-{kind}"/>')
+            b.append(f'<text x="{NODE_X + 14}" y="{y + 17}" class="rg-name rg-{kind}">'
+                     f'{html.escape(name)}</text>')
+            b.append(f'<text x="{NODE_X + 14}" y="{y + 31}" class="rg-sub">{html.escape(sub)}</text>')
+            b.append(f'<text x="{EV_X}" y="{y + 25}" class="rg-ev">{html.escape(ev)}</text>')
+            b.append('</g>')
+            y += ROW_H + ROW_GAP
+            step += 1
+        y = bottom + GROUP_GAP
+
+    b.append(f'<g class="rg-aside" style="--i:{step}">')
     b.append('<text x="0" y="300" class="rg-cap">EDGE</text>')
     for i, (cls, label) in enumerate((("conf", "confirmed — the manifest names it"),
                                       ("likely", "likely — matched a catalog rule"),
@@ -248,6 +250,7 @@ def reach_graph():
         ky = 318 + i * 22
         b.append(f'<line x1="0" y1="{ky}" x2="30" y2="{ky}" class="rg-edge rg-{cls} rg-key-line"/>')
         b.append(f'<text x="42" y="{ky + 4}" class="rg-key">{html.escape(label)}</text>')
+    b.append('</g>')
 
     b.append('</g>')
 
@@ -261,7 +264,7 @@ def reach_graph():
              "shows confidence: heavier for confirmed, lighter for likely, dashed where the "
              "target could not be named.",
              "".join(b)),
-        min_width=740)
+        min_width=740, cls="dia-seq")
 
 
 def legend_rows():
@@ -321,8 +324,8 @@ def pipeline():
             y = 30 + i * 58
             b.append(_box(x, y, 240, 46, name, "stage", sub=sub))
     for y in (53, 111, 169):
-        b.append(f'<path d="M272 {y} H322" class="e-line e-arrow" marker-end="url(#rm-arrow)"/>')
-        b.append(f'<path d="M582 {y} H632" class="e-line e-arrow" marker-end="url(#rm-arrow)"/>')
+        b.append(f'<path d="M272 {y} H322" class="e-line e-arrow pl-flow" marker-end="url(#rm-arrow)"/>')
+        b.append(f'<path d="M582 {y} H632" class="e-line e-arrow pl-flow" marker-end="url(#rm-arrow)"/>')
     b.append('</g>')
     defs = ('<defs><marker id="rm-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" '
             'markerHeight="6" orient="auto"><path d="M0 1 L7 4 L0 7" class="e-head"/></marker></defs>')

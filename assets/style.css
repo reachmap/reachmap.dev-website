@@ -834,3 +834,124 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
   .docs-body .dia { width: calc(100% + 3rem); max-width: none; }
 }
 .rg-src { font-family: var(--mono); font-size: 13px; fill: var(--fg-strong); }
+
+/* ==========================================================================
+   Motion
+   Three rules, in this order of importance:
+
+   1. The final state is the default. Everything above this block already
+      renders the finished diagram. Animation only ever plays *into* that
+      state, with animation-fill-mode: backwards supplying the "before" during
+      the delay. So a reader with JavaScript off, or an IntersectionObserver
+      that never fires, sees a correct diagram rather than an invisible one —
+      which is the failure mode of every reveal-on-scroll implementation that
+      starts from opacity:0 in the base stylesheet.
+   2. All of it sits inside prefers-reduced-motion: no-preference. Someone who
+      has asked their system for less movement gets none of this.
+   3. It only runs once, when the figure is first scrolled into view. Ambient
+      looping next to body text is hostile; the one exception is the degraded
+      marker in the hero, which pulses because that is what a status indicator
+      does, and stopping would read as recovered.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  /* ---- reach graph: rows arrive in group order, outward from the workload ---- */
+
+  .dia.in-view .rg-aside { animation: rg-rise .55s cubic-bezier(.22,.7,.3,1) backwards; }
+  .dia.in-view .rg-grp,
+  .dia.in-view .rg-row   { animation: rg-rise .5s cubic-bezier(.22,.7,.3,1) backwards; }
+  .dia.in-view .rg-aside,
+  .dia.in-view .rg-grp,
+  .dia.in-view .rg-row { animation-delay: calc(var(--i, 0) * 65ms); }
+
+  @keyframes rg-rise {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* The edge draws itself. pathLength normalises every curve to 1 so one
+     dashoffset value works for all of them regardless of actual length.
+     The dashed "possible" edge is excluded: its dasharray is what makes it
+     mean "unresolved", and borrowing it for the draw would overwrite that. */
+  .dia.in-view .rg-edge:not(.rg-poss):not(.rg-key-line) {
+    animation: rg-draw .62s cubic-bezier(.4,0,.25,1) backwards;
+    animation-delay: calc(var(--i, 0) * 65ms + 90ms);
+  }
+  @keyframes rg-draw {
+    from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    to   { stroke-dasharray: 1; stroke-dashoffset: 0; }
+  }
+
+  /* ---- blast radius: the story, in four beats ---- */
+
+  .dia.in-view .br-p1 { animation: rg-rise .5s cubic-bezier(.22,.7,.3,1) backwards; }
+  .dia.in-view .br-cold, .dia.in-view .br-hot {
+    animation: rg-draw .6s cubic-bezier(.4,0,.25,1) backwards; animation-delay: .15s;
+  }
+  /* Beat three: the two affected paths go from an ordinary grey edge to the
+     highlight. Animating *into* the resting state means the diagram is still
+     correct if this never plays. */
+  .dia.in-view .br-hot {
+    animation: rg-draw .6s cubic-bezier(.4,0,.25,1) backwards,
+               br-ignite .5s ease-out 1.05s backwards;
+  }
+  @keyframes br-ignite {
+    from { stroke: var(--line); stroke-width: 1.2; }
+    to   { stroke: var(--likely); stroke-width: 1.8; }
+  }
+  .dia.in-view .br-hit rect { animation: br-mark .5s ease-out 1.15s backwards; }
+  .dia.in-view .br-down rect { animation: br-mark .5s ease-out .95s backwards; }
+  @keyframes br-mark {
+    from { stroke: var(--line); stroke-width: 1; fill: var(--bg); }
+    to   { stroke: var(--likely); stroke-width: 1.8; fill: #fffaf0; }
+  }
+  .dia.in-view .br-alarm { animation: rg-rise .45s ease-out 1s backwards; }
+  .dia.in-view .br-answer { animation: br-land .55s cubic-bezier(.22,.7,.3,1) 1.5s backwards; }
+  @keyframes br-land {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* The one loop on the site. A degraded marker that stopped pulsing would
+     read as recovered, which is the opposite of what the diagram says. */
+  .pulse-ring { animation: br-pulse 2.6s ease-out infinite; }
+  @keyframes br-pulse {
+    0%   { transform: scale(.4); opacity: .5; }
+    70%  { transform: scale(1);  opacity: 0; }
+    100% { transform: scale(1);  opacity: 0; }
+  }
+
+  /* ---- every other figure: one quiet rise, no stagger ----
+     Keyed on a class the generator sets, not on :has(). A browser without
+     :has() would have failed open here and run the whole-figure rise *on top
+     of* the per-row stagger in the two figures that sequence themselves. */
+  .dia.in-view:not(.dia-seq) > .dia-scroll {
+    animation: rg-rise .5s cubic-bezier(.22,.7,.3,1) backwards;
+  }
+}
+
+/* transform on an SVG child needs a box to resolve against, and the default
+   (view-box) makes scale() pivot on the canvas corner rather than the shape. */
+.pulse-ring { transform-box: fill-box; transform-origin: center; fill: var(--likely); opacity: 0; }
+
+/* ---- hover: trace one row back to its edge ----
+   Not motion for its own sake. With seven curves leaving one point, following
+   a particular edge by eye is genuinely hard, and this is the cheapest fix
+   that does not add a line of JavaScript. */
+.rg-row { transition: opacity .18s ease; }
+.rg:hover .rg-row { opacity: .38; }
+.rg:hover .rg-row:hover { opacity: 1; }
+.rg-row:hover .rg-edge { stroke-width: 2.6; opacity: 1; }
+.rg-row:hover .rg-node { filter: saturate(1.35); }
+.rg-row .rg-edge, .rg-row .rg-node { transition: stroke-width .18s ease, filter .18s ease; }
+
+/* Hovering the pipeline makes it flow. Ambient by default would be noise;
+   on demand it answers "which way does this go". */
+@media (prefers-reduced-motion: no-preference) {
+  .dia:hover .pl-flow {
+    stroke-dasharray: 4 4;
+    animation: pl-march .55s linear infinite;
+  }
+  @keyframes pl-march { to { stroke-dashoffset: -8; } }
+}
