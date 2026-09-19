@@ -331,42 +331,95 @@ def colorize(text):
 # ---------------------------------------------------------------------------
 # Landing page
 #
-# Ordered by what a first-time visitor needs, which is not the order the tool
-# was built in. The advantage of having a dependency map comes first, because
-# someone who is not already convinced of that will not care which detectors
-# exist. Proof, mechanism and installation follow.
+# Ordered by what a first-time visitor needs, and *shaped* so that no two
+# consecutive sections look the same. The previous version was nine blocks of
+# label-heading-paragraph-content on one white ground, separated by hairlines,
+# which reads as a chapter book rather than a page. Surface, layout and density
+# now change from section to section: white, ink, tinted cards, soft band,
+# split, ink again.
 # ---------------------------------------------------------------------------
 
 PAYOFFS = [
-    ("incident", "When something breaks, know who is in it",
+    ("incident", "t-a", "When something breaks, know who is in it",
      "A vendor degrades or a region wobbles. Today that starts with a war room and "
      "a lot of grep. With a map it starts with a list of exactly which services "
      "touch the thing that broke.",
      "Which services call Stripe?"),
-    ("change", "Catch the dependency nobody reviewed",
+    ("change", "t-b", "Catch the dependency nobody reviewed",
      "New third-party APIs arrive one pull request at a time, each too small to "
-     "argue about. Nobody decides to depend on eleven vendors; it just happens. A "
-     "diff on every PR makes each one a decision.",
+     "argue about. Nobody decides to depend on eleven vendors; it just happens.",
      "What did this branch just add?"),
-    ("compliance", "Answer the audit question in minutes",
+    ("compliance", "t-g", "Answer the audit question in minutes",
      "What leaves the cluster, which workloads are in PCI scope, and which cloud "
-     "roles does each service assume. These questions get asked once a year and "
-     "cost a week each time.",
+     "roles each service assumes. Asked once a year, and it costs a week each time.",
      "What is in scope, and says who?"),
-    ("migration", "See what a move would actually cost",
+    ("migration", "t-p", "See what a move would actually cost",
      "Changing region, account or provider is priced by what is pinned to the old "
      "one. A PVC tied to one availability zone and a hardcoded regional endpoint "
      "are the same surprise, six months apart.",
      "What is pinned to us-east-1?"),
 ]
 
+STATS = [
+    ("16", "", "detectors, nine of which read things that are not in the pod spec"),
+    ("142", "", "catalog rules across AWS, GCP, Azure and third-party APIs"),
+    ("1", "", "vendored dependency, so it builds offline as one static binary"),
+    ("0", "", "agents, sidecars or cluster credentials required to start"),
+]
+
+BLIND_SPOTS = [
+    ("01", "keda-trigger", "t-a", "The queue nobody can see",
+     "A worker that only consumes from SQS has no inbound Service, no ingress and no "
+     "endpoint in its own environment. The queue lives in the autoscaler's "
+     "configuration, so without reading KEDA triggers that workload looks like it "
+     "depends on nothing at all."),
+    ("02", "proxy-sidecar", "t-b", "The database behind localhost",
+     "A workload behind a Cloud SQL proxy sees <code>localhost:5432</code>, which every "
+     "correct scanner suppresses as loopback. The real instance is named only in the "
+     "sidecar's arguments, as <code>project:region:instance</code>."),
+    ("03", "secret-ref", "t-c", "The connection string in a Secret",
+     "A workload mounting <code>orders-db-creds</code> is an unresolved blind spot. When an "
+     "ACK, Crossplane or Config Connector resource in the same scan names that Secret, "
+     "Reachmap resolves it to the actual RDS instance &mdash; without ever reading the Secret."),
+    ("04", "workload-identity", "t-g", "The role a workload assumes",
+     "IRSA, GKE Workload Identity and their Azure equivalent are declared "
+     "workload&rarr;cloud edges sitting in the manifest. The landscape survey found no "
+     "vendor documenting them, and they are what an IAM-policy expansion needs first."),
+]
+
+ROADMAP = [
+    ("v0.1", "manifest detectors, catalog, parsers", "done"),
+    ("v0.2", "diff, policy, exporters, Action", "done"),
+    ("v0.3", "mesh, KEDA, cloud CRs, cluster mode", "done"),
+    ("v0.4", "IAM policy expansion", "now"),
+    ("v0.5", "runtime adapters, shadow + stale", ""),
+    ("v0.6", "source-code scanning", ""),
+    ("v1.0", "blast radius, environments, serve", ""),
+]
+
 
 def landing():
     rel = ""
     payoffs = "".join(
-        f'''<div class="payoff">{dia.payoff_icon(icon)}
-        <h3>{title}</h3><p>{body}</p><span class="p-q">&ldquo;{q}&rdquo;</span></div>'''
-        for icon, title, body, q in PAYOFFS)
+        f'''<div class="card {tint}"><span class="c-chip">{dia.payoff_icon(icon)}</span>
+        <h3>{title}</h3><p>{body}</p><span class="c-q">&ldquo;{q}&rdquo;</span></div>'''
+        for icon, tint, title, body, q in PAYOFFS)
+
+    stats = "".join(
+        f'''<div class="stat"><span class="s-num">{n}<span class="s-unit">{u}</span></span>
+        <span class="s-label">{label}</span></div>'''
+        for n, u, label in STATS)
+
+    spots = "".join(
+        f'''<div class="card {tint}"><span class="c-num">{num}</span>
+        <span class="c-det">{det}</span>
+        <h3 style="margin-top:.7rem">{title}</h3><p>{body}</p></div>'''
+        for num, det, tint, title, body in BLIND_SPOTS)
+
+    road = "".join(
+        f'''<div class="road-step {state}"><span class="r-ver">{ver}</span>
+        <span class="r-what">{what}</span></div>'''
+        for ver, what, state in ROADMAP)
 
     return (
         head("Reachmap — know what your workloads depend on",
@@ -378,38 +431,46 @@ def landing():
 
 <section class="hero">
   <div class="wrap">
-    <h1>Know what your workloads<br><span class="dim">depend on.</span></h1>
-    <p class="lede">
-      Every service quietly accumulates dependencies &mdash; a queue, a managed database,
-      four vendor APIs, a cloud role. Nobody wrote them down, and the list only matters
-      on the day one of them breaks. <strong>Reachmap writes it down for you</strong>, from
-      the manifests you already have.
-    </p>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="docs/quickstart.html">Quickstart &rarr;</a>
-      <a class="btn" href="#what-you-get">See what it produces</a>
-      <a class="btn" href="{GH}">Source</a>
+    <div class="hero-grid">
+      <div>
+        <h1>Know what your workloads<br><span class="dim">depend on.</span></h1>
+        <p class="lede">
+          Every service quietly accumulates dependencies &mdash; a queue, a managed
+          database, four vendor APIs, a cloud role. Nobody wrote them down, and the list
+          only matters on the day one of them breaks.
+          <strong>Reachmap writes it down for you</strong>, from the manifests you already have.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="docs/quickstart.html">Quickstart &rarr;</a>
+          <a class="btn" href="#what-you-get">See what it produces</a>
+        </div>
+      </div>
+      <div class="hero-art">{dia.blast_radius()}</div>
     </div>
-
-    {dia.blast_radius()}
   </div>
 </section>
 
-<section>
+<section class="band-ink">
   <div class="wrap">
-    <div class="sec-label">Why map dependencies</div>
+    <div class="stats">{stats}</div>
+  </div>
+</section>
+
+<section class="plain">
+  <div class="wrap">
+    <div class="eyebrow">Why map dependencies</div>
     <h2>Four questions that are hard today</h2>
     <p class="sec-intro">
       None of these need a new tool to <em>ask</em>. They need an answer you can trust
-      without a week of archaeology, and an answer that is still true next month.
+      without a week of archaeology, and one that is still true next month.
     </p>
-    <div class="payoffs">{payoffs}</div>
+    <div class="cards cards-2">{payoffs}</div>
   </div>
 </section>
 
-<section id="what-you-get">
+<section class="band-soft" id="what-you-get">
   <div class="wrap">
-    <div class="sec-label">What you get</div>
+    <div class="eyebrow">What you get</div>
     <h2>A graph, and the evidence behind every edge</h2>
     <p class="sec-intro">
       One command over a directory of YAML. Each dependency carries the file, the line and
@@ -419,60 +480,33 @@ def landing():
 
     {term("reachmap scan", colorize(SCAN_OUTPUT))}
 
+    <h3 style="font-size:1rem; margin:2.75rem 0 .5rem">The same graph, drawn</h3>
+    <p class="sec-intro" style="margin-bottom:1rem">
+      Colours carry the node kind, and they are the colours the terminal prints &mdash;
+      learn them once here and the scan output reads itself.
+    </p>
     {dia.reach_graph()}
-
-    <p class="sec-intro" style="margin-bottom:0.5rem">
-      The colours above are the same ones the terminal prints, and they mean this:
-    </p>
-    {dia.legend()}
+    <div class="legend legend-wide">{dia.legend_rows()}</div>
   </div>
 </section>
 
-<section>
+<section class="plain">
   <div class="wrap">
-    <div class="sec-label">Why a grep would not do</div>
-    <h2>A pod spec is not the dependency list</h2>
-    <p class="sec-intro">
+    <div class="eyebrow">Why a grep would not do</div>
+    <p class="pull">
       Most of what a service reaches is written down somewhere other than its container
-      environment. Four of Reachmap's detectors exist because those dependencies are
-      otherwise invisible &mdash; not hard to find, <em>invisible</em>.
+      environment. Not hard to find &mdash; <em>invisible</em>.
     </p>
-    <div class="grid grid-2">
-      <div class="cell">
-        <span class="tag">keda-trigger</span>
-        <h3>The queue nobody can see</h3>
-        <p>A worker that only consumes from SQS has no inbound Service, no ingress and no
-        endpoint in its own environment. The queue lives in the autoscaler's configuration.
-        Without reading KEDA triggers, that workload looks like it depends on nothing.</p>
-      </div>
-      <div class="cell">
-        <span class="tag">proxy-sidecar</span>
-        <h3>The database behind localhost</h3>
-        <p>A workload behind a Cloud SQL proxy sees <code>localhost:5432</code>, which every
-        correct scanner suppresses as loopback. The real instance is named only in the
-        sidecar's arguments, as <code>project:region:instance</code>.</p>
-      </div>
-      <div class="cell">
-        <span class="tag">secret-ref</span>
-        <h3>The connection string in a Secret</h3>
-        <p>A workload mounting <code>orders-db-creds</code> is an unresolved blind spot. When an
-        ACK, Crossplane or Config Connector resource in the same scan names that Secret,
-        Reachmap resolves it to the actual RDS instance &mdash; without ever reading the Secret.</p>
-      </div>
-      <div class="cell">
-        <span class="tag">workload-identity</span>
-        <h3>The role a workload assumes</h3>
-        <p>IRSA, GKE Workload Identity and their Azure equivalent are declared
-        workload&rarr;cloud edges sitting in the manifest. The landscape survey found no
-        vendor documenting them. They are also what an IAM-policy expansion needs first.</p>
-      </div>
-    </div>
+    <p class="sec-intro">
+      Four of Reachmap's detectors exist for exactly this reason.
+    </p>
+    <div class="cards cards-2">{spots}</div>
   </div>
 </section>
 
-<section>
+<section class="band-soft">
   <div class="wrap">
-    <div class="sec-label">How it works</div>
+    <div class="eyebrow">How it works</div>
     <h2>Read, resolve, emit</h2>
     <p class="sec-intro">
       No agent and no cluster required. A directory of rendered YAML is enough; a live
@@ -480,8 +514,8 @@ def landing():
     </p>
     {dia.pipeline()}
 
-    <h2 style="margin-top:3rem; font-size:1.15rem">And it tells you how sure it is</h2>
-    <p class="sec-intro">
+    <h3 style="font-size:1rem; margin:3rem 0 .5rem">And it tells you how sure it is</h3>
+    <p class="sec-intro" style="margin-bottom:0.5rem">
       An edge you disagree with has to be arguable, so confidence is a bucket with a rule
       behind it rather than a number. &ldquo;0.73&rdquo; is not an argument.
     </p>
@@ -489,84 +523,80 @@ def landing():
   </div>
 </section>
 
-<section>
+<section class="plain">
   <div class="wrap">
-    <div class="sec-label">In CI</div>
+    <div class="eyebrow">In CI</div>
     <h2>Every new dependency becomes a decision</h2>
-    <p class="sec-intro">
-      Scanning is useful once. Diffing is useful every day. Reachmap compares the graph on a
-      branch against the graph on main and comments on the pull request when a change adds
-      something &mdash; failing the build only if you ask it to.
-    </p>
-
-    {dia.pr_comment_mock(PR_TABLE)}
-
-    <div class="grid grid-3">
-      <div class="cell">
-        <h3>Removals never fail</h3>
-        <p>Every gate fires only on <em>added</em> dependencies. Dropping one is cleanup, and a
-        tool that fails CI for it would punish exactly the change teams should be making.</p>
+    <div class="split split-rev">
+      <div>{dia.pr_comment_mock(PR_TABLE)}</div>
+      <div>
+        <p class="sec-intro">
+          Reachmap compares the graph on a branch against the graph on main and comments on
+          the pull request when a change adds something &mdash; failing the build only if
+          you ask it to.
+        </p>
+        <dl class="kv" style="margin-bottom:1.5rem">
+          <dt>never fails on</dt><dd>removals &mdash; dropping a dependency is cleanup</dd>
+          <dt>exit 3</dt><dd>findings, kept distinct from a crash</dd>
+          <dt>emits</dt><dd>markdown, SARIF, DOT, Backstage</dd>
+        </dl>
+        <p><a href="docs/ci.html">Set up the gate &rarr;</a></p>
       </div>
-      <div class="cell">
-        <h3>Findings get their own exit code</h3>
-        <p><code>0</code> clean, <code>1</code> tool error, <code>2</code> usage, <code>3</code>
-        findings. Collapsing findings into <code>1</code> makes a crash indistinguishable from a
-        tripped gate, and those need different responses at 3am.</p>
-      </div>
-      <div class="cell">
-        <h3>Output CI already reads</h3>
-        <p>A markdown comment for the pull request, SARIF for the security tab, Graphviz DOT
-        and Backstage catalog entities for everything downstream.</p>
-      </div>
-    </div>
-    <p style="margin-top:1.75rem"><a href="docs/ci.html">Set up the gate &rarr;</a></p>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="sec-label">Install</div>
-    <h2>One binary, one vendored dependency</h2>
-    <p class="sec-intro">
-      Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds offline,
-      audits in an afternoon and ships as one static binary.
-    </p>
-
-    {term("build from source", colorize(BUILD_CMDS))}
-
-    <div class="note warn">
-      <strong>A note on <code>go install</code>.</strong> The module path is
-      <code>reachmap.dev</code>, which needs that domain to serve a <code>go-import</code> meta
-      tag before <code>go install reachmap.dev/cmd/reachmap@latest</code> can resolve. The tag is
-      already in this site's HTML, so it starts working the moment the domain points here.
-      Until then, build from source.
     </div>
   </div>
 </section>
 
-<section>
+<section class="band-ink">
   <div class="wrap">
-    <div class="sec-label">Known limits</div>
-    <h2>Stated plainly</h2>
-    <p class="sec-intro">
+    <div class="split">
+      <div>
+        <div class="eyebrow">Install</div>
+        <h2>One binary, one vendored dependency</h2>
+        <p class="sec-intro">
+          Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds
+          offline, audits in an afternoon and ships as one static binary.
+        </p>
+        <div class="note warn" style="margin-bottom:0">
+          <strong><code>go install</code> is not live yet.</strong> The module path
+          <code>reachmap.dev</code> needs that domain to serve a <code>go-import</code> meta
+          tag first. The tag is already in this page. Until the domain points here, build
+          from source.
+        </div>
+      </div>
+      <div>{term("build from source", colorize(BUILD_CMDS))}</div>
+    </div>
+  </div>
+</section>
+
+<section class="plain">
+  <div class="wrap">
+    <div class="eyebrow">Roadmap</div>
+    <h2>Where this is going</h2>
+    <div class="road">{road}</div>
+
+    <h3 style="font-size:1rem; margin:3.25rem 0 .75rem">And what it cannot do</h3>
+    <p class="sec-intro" style="margin-bottom:1rem">
       A tool that overclaims here loses trust the first time it is wrong.
     </p>
-    <ul style="color:var(--fg-mute); max-width:44rem; line-height:1.8">
-      <li><strong>Secrets.</strong> A connection string in a Secret is invisible unless something in
-      the scan describes that Secret. Reachmap does not read Secrets, in cluster mode either.</li>
-      <li><strong>Dynamically constructed endpoints.</strong>
-      <code>os.getenv("REGION") + ".internal.foo.com"</code> cannot be resolved statically.</li>
-      <li><strong>Unrendered templates.</strong> Refused with a message rather than scanned, because
-      analysing them produces dependencies on literal <code>&#123;&#123; .Values.host &#125;&#125;</code> strings.</li>
-      <li><strong>Permitted reach is not observed reach.</strong> Mesh and network-policy edges say a
-      workload <em>may</em> reach something. Proving it does needs runtime data.</li>
-    </ul>
+    <div class="cards cards-2">
+      <div class="card"><h3>Secrets</h3><p>A connection string in a Secret is invisible unless
+      something in the scan describes that Secret. Reachmap does not read Secrets, in cluster
+      mode either.</p></div>
+      <div class="card"><h3>Constructed endpoints</h3><p><code>os.getenv("REGION") +
+      ".internal.foo.com"</code> cannot be resolved statically. Source-code scanning catches
+      some of it later.</p></div>
+      <div class="card"><h3>Unrendered templates</h3><p>Refused with a message rather than
+      scanned, because analysing them produces dependencies on literal
+      <code>&#123;&#123; .Values.host &#125;&#125;</code> strings.</p></div>
+      <div class="card"><h3>Permitted &ne; observed</h3><p>Mesh and network-policy edges say a
+      workload <em>may</em> reach something. Proving that it does needs runtime data.</p></div>
+    </div>
   </div>
 </section>
 
-<section>
+<section class="band-soft">
   <div class="wrap">
-    <div class="sec-label">Start here</div>
+    <div class="eyebrow">Start here</div>
     <h2>Three steps, in order</h2>
     <div class="next">
       <a href="docs/quickstart.html">
@@ -592,6 +622,7 @@ def landing():
 """
         + footer(rel)
     )
+
 
 
 # ---------------------------------------------------------------------------

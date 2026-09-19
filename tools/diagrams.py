@@ -76,52 +76,51 @@ def _edge(x1, y1, x2, y2, cls="e-line"):
 def blast_radius():
     """One vendor degrades. Which services are in it?
 
-    This is the diagram that has to earn the page, because 'why map
-    dependencies' is answered by a question you cannot currently answer, not by
-    a feature list. The highlight *is* the answer."""
-    svc = [("checkout", 40, True), ("orders", 104, True), ("search", 168, False), ("ingestor", 232, False)]
-    # Deliberately not colour-coded by kind: in this diagram the only thing
-    # that should catch the eye is what broke and who is in it. Kind colours
-    # come later, in the reach graph, where they carry the legend.
-    dep = [("Stripe", 34, "", True), ("rds orders-prod", 98, "", False),
-           ("s3 uploads", 162, "", False), ("msk events", 226, "", False)]
+    This is the diagram that has to earn the page, because "why map
+    dependencies" is answered by a question you cannot currently answer, not by
+    a feature list. The highlight *is* the answer.
 
-    # (service index, dependency index)
-    links = [(0, 0), (0, 1), (1, 0), (1, 1), (1, 2), (2, 2), (3, 3), (3, 2)]
+    Sized for the hero's art column (~480px), not for the full page width. The
+    first version was 880 wide with four services and four dependencies, and it
+    clipped its right-hand column inside the panel — a diagram whose punchline
+    is cut off is worse than no diagram. Three and three makes the same point:
+    two services are in it, one is not."""
+    svc = [("checkout", 40, True), ("orders", 92, True), ("search", 144, False)]
+    # Deliberately not colour-coded by kind: the only thing that should catch
+    # the eye here is what broke and who is in it. Kind colours come later, in
+    # the reach graph, where they carry the legend.
+    dep = [("Stripe", 34, True), ("rds orders-prod", 96, False), ("s3 uploads", 158, False)]
+    links = [(0, 0), (0, 1), (1, 0), (1, 2), (2, 2)]
 
     b = ['<g>']
-    # edges first so boxes sit on top
     for si, di in links:
-        hot = svc[si][2] and dep[di][3]
-        b.append(_edge(232, svc[si][1] + 17, 412, dep[di][1] + 17,
+        hot = svc[si][2] and dep[di][2]
+        b.append(_edge(150, svc[si][1] + 16, 270, dep[di][1] + 16,
                        "e-line e-hot" if hot else "e-line"))
 
-    b.append('<text x="24" y="22" class="d-cap">YOUR SERVICES</text>')
+    b.append('<text x="0" y="20" class="d-cap">YOUR SERVICES</text>')
     for name, y, hot in svc:
-        b.append(_box(24, y, 208, 34, name, "hit" if hot else ""))
+        b.append(_box(0, y, 150, 32, name, "hit" if hot else ""))
 
-    b.append('<text x="412" y="22" class="d-cap">WHAT THEY REACH</text>')
-    for name, y, kind, down in dep:
-        b.append(_box(412, y, 208, 34, name, f"{kind}{' down' if down else ''}"))
-    # the degraded marker
-    b.append('<circle cx="600" cy="51" r="4" class="pulse"/>')
-    b.append('<text x="632" y="45" class="d-note">degraded</text>')
+    b.append('<text x="270" y="20" class="d-cap">WHAT THEY REACH</text>')
+    for name, y, down in dep:
+        b.append(_box(270, y, 190, 32, name, "down" if down else ""))
+    b.append('<circle cx="446" cy="50" r="4" class="pulse"/>')
+    b.append('<text x="470" y="44" class="d-note">degraded</text>')
 
-    b.append('<line x1="24" y1="296" x2="856" y2="296" class="d-rule"/>')
-    b.append('<text x="24" y="322" class="d-ask">Stripe is degraded. Which services are in it?</text>')
-    b.append('<text x="24" y="344" class="d-ans">checkout and orders &mdash; and nothing else. '
-             'Two seconds, not a war room.</text>')
+    b.append('<line x1="0" y1="214" x2="560" y2="214" class="d-rule"/>')
+    b.append('<text x="0" y="240" class="d-ask">Stripe is degraded. Who is in it?</text>')
+    b.append('<text x="0" y="264" class="d-ans">checkout and orders. Not search.</text>')
     b.append('</g>')
 
     return figure(
-        _svg(880, 360,
+        _svg(560, 276,
              "Blast radius of one degraded dependency",
-             "Four services on the left connect to four shared dependencies on the right. "
+             "Three services on the left connect to three shared dependencies on the right. "
              "Stripe is marked degraded; the edges from checkout and orders to Stripe are "
-             "highlighted, showing those two services are affected and search and ingestor "
-             "are not.",
+             "highlighted, showing those two services are affected and search is not.",
              "".join(b)),
-        min_width=790)
+        min_width=460)
 
 
 def payoff_icon(name):
@@ -178,6 +177,12 @@ def reach_graph():
         min_width=660)
 
 
+def legend_rows():
+    """The legend's rows, without the wrapper, for callers that want to set
+    their own layout (two columns under a full-width graph, say)."""
+    return _legend_items()
+
+
 def legend():
     """A plain HTML legend — it is a list of terms, not a picture, and building
     it as HTML keeps it selectable, wrappable and readable on a phone."""
@@ -188,12 +193,22 @@ def legend():
         ("opaque", "[opaque]", "A dependency that exists but whose target is in a Secret"),
         ("svc", "[service]", "Another service inside the cluster"),
     ]
-    rows = "".join(
+    return f'<div class="legend">{_legend_items()}</div>'
+
+
+def _legend_items():
+    items = [
+        ("cloud", "[cloud]", "A named cloud resource — an RDS instance, a queue, a bucket"),
+        ("ext", "[external]", "A third-party API outside your estate"),
+        ("ident", "[identity]", "A cloud role or service account the workload assumes"),
+        ("opaque", "[opaque]", "A dependency that exists but whose target is in a Secret"),
+        ("svc", "[service]", "Another service inside the cluster"),
+    ]
+    return "".join(
         f'<div class="lg-row"><span class="lg-swatch lg-{k}"></span>'
         f'<code class="lg-tag">{html.escape(tag)}</code>'
         f'<span class="lg-desc">{html.escape(desc)}</span></div>'
         for k, tag, desc in items)
-    return f'<div class="legend">{rows}</div>'
 
 
 # ---------------------------------------------------------------------------

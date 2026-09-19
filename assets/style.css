@@ -17,14 +17,31 @@
   --fg-mute:   #5f6167;
   /* Not lighter than this. Hierarchy here comes from size, weight and letter-
      spacing; leaning on low contrast instead would push labels, table headers
-     and detector names below 4.5:1, and those are content, not decoration. */
-  --fg-faint:  #74767d;
+     and detector names below 4.5:1, and those are content, not decoration.
+     Tuned against the darkest ground it ever sits on (--tint-purple), not
+     against white: the tinted cards cost roughly half a point of ratio, which
+     is what pushed the eyebrows and card captions under the floor. */
+  --fg-faint:  #6a6c72;
   /* Punctuation only — the shell prompt and the arrow glyph. Exempt from the
      text contrast floor because there is nothing to read in them. */
   --fg-glyph:  #9296a0;
 
   --accent:      #1a56b8;
   --accent-soft: #eef3fb;
+
+  /* Tints. The page had exactly two colours and nine identically shaped
+     sections, which is what made it read like a chapter book. These give each
+     card a field of its own without turning the thing into a pitch deck. */
+  --tint-blue:   #eff4fc;
+  --tint-green:  #edf7f2;
+  --tint-amber:  #fdf6e9;
+  --tint-purple: #f5f0fa;
+  --tint-clay:   #fbf1ed;
+  --edge-blue:   #cfe0f6;
+  --edge-green:  #c7e6d6;
+  --edge-amber:  #f0dfb8;
+  --edge-purple: #e0d2ef;
+  --edge-clay:   #f0d7cc;
 
   /* Semantic tokens for scan output. These are the same buckets the tool
      prints, so the page and the terminal agree on what a colour means. */
@@ -205,29 +222,75 @@ td > code, th > code, .kv dt code { white-space: nowrap; }
 .t-warn    { color: var(--likely); }
 .t-add     { color: var(--confirmed); }
 
-/* ---------- sections ---------- */
+/* ---------- surfaces ----------
+   Three of them, alternating. A hairline between nine identical white
+   sections is a page break, not a rhythm; a change of ground is. */
 
-section { padding: 4rem 0; }
-section + section { border-top: 1px solid var(--line-soft); }
+section { padding: 4.5rem 0; }
+section.band-soft { background: var(--bg-soft); }
+/* On the soft band the code surface has to move the other way, or a #fcfcfb
+   block on a #fafafa ground is not a block at all. */
+section.band-soft .term pre,
+section.band-soft .pr-mock,
+section.band-soft .card { background: #fff; }
+section.band-soft .hero-art { background: #fff; }
+section.band-soft + section.band-soft { border-top: 1px solid var(--line); }
+section.plain + section.plain { border-top: 1px solid var(--line-soft); }
+
+/* Dark bands re-point the tokens rather than restating every rule, so a
+   section flips wholesale — including the syntax colours inside a code block,
+   which have to brighten or they disappear. */
+section.band-ink {
+  --bg:        #0e1319;
+  --bg-soft:   #141b23;
+  --bg-code:   #0a0e13;
+  --line:      #24303d;
+  --line-soft: #1a232d;
+  --fg:        #cfd8e3;
+  --fg-strong: #f4f7fa;
+  --fg-mute:   #9dabbb;
+  --fg-faint:  #8593a3;
+  --fg-glyph:  #64738400;
+  --accent:      #7cbcf7;
+  --accent-soft: #14202d;
+  --confirmed: #6ad3a0;
+  --likely:    #e6c473;
+  --possible:  #9dabbb;
+  --cloud:     #74bbf7;
+  --external:  #cf97e2;
+  --identity:  #6ad3a0;
+  --opaque:    #ec9a88;
+  --tint-blue: #14202d;
+  --edge-blue: #24303d;
+  background: #0e1319;
+  color: var(--fg);
+}
+section.band-ink .t-prompt, section.band-ink .t-arrow { color: #647384; }
+section.band-ink .t-meta { color: #8593a3; }
+section.band-ink .term pre { color: #c6d1de; }
+section.band-ink :not(pre) > code { background: #18222e; color: #e6edf5; }
+section.band-ink .btn-primary { background: #fff; color: #0e1319; }
+section.band-ink .btn-primary:hover { background: #dbe6f2; color: #0e1319; }
 
 .sec-label {
   font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--fg-faint); margin-bottom: 0.9rem;
 }
-section > .wrap > h2 {
-  font-size: clamp(1.35rem, 3vw, 1.65rem);
-  letter-spacing: -0.026em;
+section h2 {
+  font-size: clamp(1.4rem, 3vw, 1.75rem);
+  letter-spacing: -0.028em;
   margin-bottom: 1rem;
 }
+section h3 { font-size: 1rem; letter-spacing: -0.016em; }
 .sec-intro { color: var(--fg-mute); max-width: 42rem; margin-bottom: 2.5rem; }
 
 /* Columns, not boxes. The old grid drew a border around every claim, which
    made three short paragraphs look like a control panel. */
 .grid { display: grid; gap: 2.5rem 3rem; }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-2 { grid-template-columns: repeat(2, 1fr); gap: 2.75rem 4rem; }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.75rem 4rem; }
 @media (max-width: 52rem) {
-  .grid-3, .grid-2 { grid-template-columns: 1fr; gap: 2.25rem; }
+  .grid-3, .grid-2 { grid-template-columns: minmax(0, 1fr); gap: 2.25rem; }
 }
 
 .cell h3 { font-size: 0.98rem; margin-bottom: 0.45rem; letter-spacing: -0.014em; }
@@ -274,7 +337,7 @@ tbody tr:last-child td { border-bottom: 0; }
   gap: 4rem; padding: 3.5rem 0 6rem;
 }
 @media (max-width: 58rem) {
-  .docs { grid-template-columns: 1fr; gap: 2rem; padding-top: 2.25rem; }
+  .docs { grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-top: 2.25rem; }
 }
 
 .docs-nav { font-size: 0.9rem; }
@@ -464,8 +527,8 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 
 /* ---------- payoff cards ---------- */
 
-.payoffs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5rem 4rem; }
-@media (max-width: 52rem) { .payoffs { grid-template-columns: 1fr; gap: 2.25rem; } }
+.payoffs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem 4rem; }
+@media (max-width: 52rem) { .payoffs { grid-template-columns: minmax(0, 1fr); gap: 2.25rem; } }
 .payoff .p-icon {
   width: 20px; height: 20px; color: var(--accent);
   display: block; margin-bottom: 0.7rem;
@@ -511,8 +574,8 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 
 /* ---------- next steps ---------- */
 
-.next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-@media (max-width: 52rem) { .next { grid-template-columns: 1fr; } }
+.next { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+@media (max-width: 52rem) { .next { grid-template-columns: minmax(0, 1fr); } }
 .next a { display: block; padding: 1.1rem 1.2rem; background: var(--bg); color: inherit; }
 .next a:hover { background: var(--bg-soft); text-decoration: none; }
 .next .n-step { font-family: var(--mono); font-size: 0.7rem; color: var(--fg-faint); letter-spacing: 0.08em; }
@@ -533,3 +596,176 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .toc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.22rem; }
 .toc a { color: var(--fg-mute); }
 .toc a:hover { color: var(--accent); }
+
+/* ==========================================================================
+   Rhythm: the components that stop every section looking the same
+   ========================================================================== */
+
+/* ---------- hero: side by side, on a faint field ---------- */
+
+.hero {
+  padding: 5rem 0 4.5rem;
+  position: relative;
+  background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+  background-size: 26px 26px;
+  background-position: -13px -13px;
+}
+/* The grid is texture, not content: fade it out before it reaches the copy. */
+.hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255,255,255,.55) 0%, #fff 62%, #fff 100%);
+}
+.hero > .wrap { position: relative; z-index: 1; }
+
+.hero-grid > * { min-width: 0; }
+.split > * { min-width: 0; }
+.hero-grid {
+  display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 3.5rem; align-items: center;
+}
+@media (max-width: 62rem) { .hero-grid > * { min-width: 0; }
+.split > * { min-width: 0; }
+.hero-grid { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; } }
+
+.hero h1 {
+  font-size: clamp(2.1rem, 4.6vw, 3.35rem);
+  letter-spacing: -0.036em; line-height: 1.12;
+  margin-bottom: 1.2rem;
+}
+.hero .lede { max-width: none; margin-bottom: 2rem; }
+
+.hero-art {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1.25rem 1.25rem 1rem;
+}
+.hero-art .dia { margin: 0; }
+.hero-art .dia figcaption { margin-top: 0.85rem; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-faint); margin-bottom: 1rem;
+}
+.eyebrow::before {
+  content: ""; width: 1.4rem; height: 2px; border-radius: 2px;
+  background: var(--accent);
+}
+
+/* ---------- the numbers band ---------- */
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2rem 1rem; }
+@media (max-width: 52rem) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.25rem 1rem; } }
+.stat .s-num {
+  display: block;
+  font-size: clamp(2.1rem, 5vw, 3rem); font-weight: 600;
+  letter-spacing: -0.04em; line-height: 1;
+  color: var(--fg-strong);
+}
+.stat .s-unit { font-size: 0.5em; font-weight: 500; color: var(--fg-mute); letter-spacing: -0.01em; }
+.stat .s-label {
+  display: block; margin-top: 0.6rem; font-size: 0.86rem; color: var(--fg-mute);
+  max-width: 13rem;
+}
+.band-ink .stat .s-num { color: #fff; }
+
+/* ---------- tinted cards ---------- */
+
+.cards { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 52rem) { .cards-2, .cards-3 { grid-template-columns: minmax(0, 1fr); } }
+
+.card { background: var(--bg); padding: 1.6rem 1.5rem; }
+.card h3 { font-size: 1rem; margin-bottom: 0.5rem; letter-spacing: -0.016em; }
+.card p { color: var(--fg-mute); font-size: 0.92rem; margin: 0; }
+
+/* One tint per card, so a row of four reads as four things rather than as one
+   grey slab. The hue matches what the card is about wherever the palette
+   already means something — clay is the unresolved-secret colour. */
+.card.t-b { background: var(--tint-blue); }
+.card.t-g { background: var(--tint-green); }
+.card.t-a { background: var(--tint-amber); }
+.card.t-p { background: var(--tint-purple); }
+.card.t-c { background: var(--tint-clay); }
+
+.card .c-chip {
+  display: inline-grid; place-items: center;
+  width: 2rem; height: 2rem; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--line);
+  margin-bottom: 0.9rem;
+}
+.card .c-chip .p-icon { width: 17px; height: 17px; }
+.card.t-b .c-chip { color: var(--cloud); border-color: var(--edge-blue); }
+.card.t-g .c-chip { color: var(--identity); border-color: var(--edge-green); }
+.card.t-a .c-chip { color: var(--likely); border-color: var(--edge-amber); }
+.card.t-p .c-chip { color: var(--external); border-color: var(--edge-purple); }
+.card .i-dot { fill: currentColor; stroke: none; }
+.card .c-q {
+  display: block; margin-top: 0.8rem; font-size: 0.86rem;
+  color: var(--fg-faint); font-style: italic;
+}
+
+/* numbered cards — the blind spots */
+.card .c-num {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--fg-faint);
+  letter-spacing: 0.06em;
+}
+.card .c-det {
+  display: inline-block; font-family: var(--mono); font-size: 0.7rem;
+  padding: 0.12rem 0.42rem; border-radius: 3px;
+  background: var(--bg); border: 1px solid var(--line); color: var(--fg-mute);
+  margin-left: 0.5rem;
+}
+
+/* ---------- split: text beside art ---------- */
+
+.split {
+  display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 3rem; align-items: start;
+}
+.split.split-rev { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+@media (max-width: 58rem) {
+  .split, .split.split-rev { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+}
+.split .sec-intro { margin-bottom: 1.25rem; }
+
+/* ---------- roadmap timeline ---------- */
+
+.road { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; margin-top: 1rem; }
+@media (max-width: 62rem) { .road { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 2rem; } }
+@media (max-width: 34rem) { .road { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.road-step { position: relative; padding-top: 1.9rem; padding-right: 0.75rem; }
+.road-step::before {
+  content: ""; position: absolute; left: 0; top: 0.45rem;
+  width: 100%; height: 1px; background: var(--line);
+}
+.road-step::after {
+  content: ""; position: absolute; left: 0; top: 0;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--line);
+}
+.road-step.done::after { background: var(--confirmed); border-color: var(--confirmed); }
+.road-step.now::after { background: var(--bg); border-color: var(--accent); }
+.road-step .r-ver { font-family: var(--mono); font-size: 0.82rem; color: var(--fg-strong); font-weight: 500; }
+.road-step .r-what { display: block; margin-top: 0.3rem; font-size: 0.84rem; color: var(--fg-mute); }
+.road-step.done .r-ver { color: var(--confirmed); }
+.road-step.now .r-ver { color: var(--accent); }
+
+/* ---------- pull statement ---------- */
+
+.pull {
+  font-size: clamp(1.15rem, 2.6vw, 1.5rem);
+  line-height: 1.45; letter-spacing: -0.022em;
+  color: var(--fg-strong); font-weight: 500;
+  max-width: 38rem;
+  border-left: 3px solid var(--accent);
+  padding-left: 1.35rem;
+  margin: 0 0 1.5rem;
+}
+.band-ink .pull { border-left-color: var(--accent); }
+
+/* A legend under a full-width graph has room for two columns. */
+.legend-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.5rem; }
+@media (max-width: 52rem) { .legend-wide { grid-template-columns: minmax(0, 1fr); } }
