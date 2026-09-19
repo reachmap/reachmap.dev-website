@@ -1,97 +1,62 @@
-/* Reachmap — terminal-forward, dark-first.
-   Dark is the default because the tool is judged by its output, and its output
-   is a terminal. Light is a full override, not an afterthought. */
+/* Reachmap — light, minimal.
+   One surface, hairline rules, and whitespace doing the work that borders and
+   shadows used to. Colour appears in exactly two places: links, and the
+   semantic tokens in code output, where it carries meaning the text does not. */
 
 :root {
-  color-scheme: dark;
-
-  --bg:        #0b0f14;
-  --bg-raised: #111721;
-  --bg-sunken: #070a0e;
-  --line:      #1e2733;
-  --line-soft: #161d27;
-
-  --fg:        #d7e0ea;
-  --fg-strong: #f2f6fa;
-  --fg-mute:   #8a97a8;
-  --fg-faint:  #5d6a7a;
-
-  --accent:      #5ab0f0;
-  --accent-dim:  #2a5a80;
-  --accent-wash: rgba(90, 176, 240, 0.09);
-
-  /* Confidence + kind colours. These are the same semantic buckets the tool
-     uses, so the site and the terminal agree. */
-  --confirmed: #63d29a;
-  --likely:    #e2bd63;
-  --possible:  #8a97a8;
-  --cloud:     #5ab0f0;
-  --external:  #c78bdd;
-  --identity:  #63d29a;
-  --opaque:    #e08a7a;
-
-  /* Terminal chrome is fixed, not themed. The code block stays dark in light
-     mode on purpose, so a title bar mixed from the page background would come
-     out mid-grey and look broken. */
-  --term-bg:   #070a0e;
-  --term-bar:  #0e141c;
-  --term-line: #1a2230;
-  --term-fg:   #c3cedc;
-
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
-  --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, Roboto, "Helvetica Neue", sans-serif;
-
-  --wrap: 68rem;
-  --radius: 6px;
-}
-
-:root[data-theme="light"] {
   color-scheme: light;
-  --bg:        #fbfcfd;
-  --bg-raised: #ffffff;
-  --bg-sunken: #12161c;
-  --line:      #dde3ea;
-  --line-soft: #eaeef3;
-  --fg:        #2a3441;
-  --fg-strong: #0d1117;
-  --fg-mute:   #5b6776;
-  --fg-faint:  #8a94a2;
-  --accent:      #1667b8;
-  --accent-dim:  #9cc3e8;
-  --accent-wash: rgba(22, 103, 184, 0.06);
-}
 
-/* Dark is the default, but a visitor whose system says light should get light
-   without having to find the toggle. The [data-theme="dark"] guard keeps an
-   explicit choice winning over the system preference. */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --bg:        #fbfcfd;
-    --bg-raised: #ffffff;
-    --bg-sunken: #12161c;
-    --line:      #dde3ea;
-    --line-soft: #eaeef3;
-    --fg:        #2a3441;
-    --fg-strong: #0d1117;
-    --fg-mute:   #5b6776;
-    --fg-faint:  #8a94a2;
-    --accent:      #1667b8;
-    --accent-dim:  #9cc3e8;
-    --accent-wash: rgba(22, 103, 184, 0.06);
-  }
+  --bg:        #ffffff;
+  --bg-soft:   #fafafa;
+  --bg-code:   #fcfcfb;
+  --line:      #e6e6e3;
+  --line-soft: #f0f0ed;
+
+  --fg:        #35363a;
+  --fg-strong: #16171a;
+  --fg-mute:   #5f6167;
+  /* Not lighter than this. Hierarchy here comes from size, weight and letter-
+     spacing; leaning on low contrast instead would push labels, table headers
+     and detector names below 4.5:1, and those are content, not decoration. */
+  --fg-faint:  #74767d;
+  /* Punctuation only — the shell prompt and the arrow glyph. Exempt from the
+     text contrast floor because there is nothing to read in them. */
+  --fg-glyph:  #9296a0;
+
+  --accent:      #1a56b8;
+  --accent-soft: #eef3fb;
+
+  /* Semantic tokens for scan output. These are the same buckets the tool
+     prints, so the page and the terminal agree on what a colour means. */
+  --confirmed: #1a7a4e;
+  --likely:    #8a6310;
+  --possible:  #6b6d73;
+  --cloud:     #1d5fb8;
+  --external:  #7340a8;
+  --identity:  #1a7a4e;
+  --opaque:    #a8472a;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+
+  /* 64rem, not narrower: real scan output runs long, and this is the width at
+     which the hero block stops clipping. Prose is capped separately and much
+     tighter, so the extra width only ever goes to code and tables. */
+  --wrap: 64rem;
+  --radius: 5px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 400 16px/1.65 var(--sans);
+  font: 400 16px/1.7 var(--sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -99,303 +64,287 @@ body {
 .wrap { width: min(100% - 2.5rem, var(--wrap)); margin-inline: auto; }
 
 a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; text-underline-offset: 3px; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
 a:focus-visible, button:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px;
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px;
 }
 
-h1, h2, h3, h4 {
+h1, h2, h3 {
   color: var(--fg-strong);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.021em;
   line-height: 1.25;
   margin: 0;
 }
 
-p { margin: 0 0 1rem; }
+p { margin: 0 0 1.1rem; }
 p:last-child { margin-bottom: 0; }
 
-code { font-family: var(--mono); font-size: 0.88em; }
+code { font-family: var(--mono); font-size: 0.86em; }
 
+/* Inline code is marked by tint alone. A border on every token turns a
+   technical paragraph into a fence. */
 :not(pre) > code {
-  background: var(--accent-wash);
-  border: 1px solid var(--line);
+  background: var(--bg-soft);
   border-radius: 3px;
-  padding: 0.1em 0.38em;
+  padding: 0.12em 0.34em;
   color: var(--fg-strong);
-  /* Short tokens never wrap because they fit; a long one wraps rather than
-     pushing the whole page sideways on a phone. `nowrap` here was forcing a
-     horizontal scrollbar on the landing page at 390px. */
   overflow-wrap: break-word;
 }
-
-/* Table cells are the one place a token must not wrap: a broken flag or
-   hostname in a reference table is harder to read than a scrollbar, and the
-   table already scrolls inside .table-scroll. */
 td > code, th > code, .kv dt code { white-space: nowrap; }
 
 /* ---------- header ---------- */
 
 .site-head {
-  position: sticky; top: 0; z-index: 20;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
+  background: var(--bg);
 }
 .site-head .wrap {
-  display: flex; align-items: center; gap: 1.5rem;
-  height: 3.5rem;
+  display: flex; align-items: center; gap: 2rem;
+  height: 3.75rem;
 }
 .brand {
-  font-family: var(--mono); font-weight: 600; font-size: 0.95rem;
-  color: var(--fg-strong); text-decoration: none;
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  margin-right: auto;
+  font-family: var(--mono); font-weight: 500; font-size: 0.95rem;
+  color: var(--fg-strong);
+  display: inline-flex; align-items: baseline; gap: 0.5rem;
+  margin-right: auto; letter-spacing: -0.01em;
 }
 .brand:hover { text-decoration: none; }
-.brand .mark { color: var(--accent); }
-.brand .ver {
-  font-size: 0.68rem; font-weight: 500; color: var(--fg-faint);
-  border: 1px solid var(--line); border-radius: 999px;
-  padding: 0.1rem 0.45rem;
-}
-.site-nav { display: flex; align-items: center; gap: 1.25rem; }
-.site-nav a {
-  font-family: var(--mono); font-size: 0.82rem; color: var(--fg-mute);
-}
-.site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--fg-strong); text-decoration: none; }
+.brand .ver { font-size: 0.72rem; color: var(--fg-faint); font-weight: 400; }
 
-.theme-toggle {
-  background: none; border: 1px solid var(--line); color: var(--fg-mute);
-  border-radius: var(--radius); cursor: pointer;
-  width: 2rem; height: 1.85rem; display: grid; place-items: center;
-  padding: 0;
-}
-.theme-toggle svg { width: 15px; height: 15px; display: block; }
-.theme-toggle .sun { display: none; }
-:root[data-theme="light"] .theme-toggle .sun { display: block; }
-:root[data-theme="light"] .theme-toggle .moon { display: none; }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .theme-toggle .sun { display: block; }
-  :root:not([data-theme="dark"]) .theme-toggle .moon { display: none; }
-}
-.theme-toggle:hover { color: var(--fg-strong); border-color: var(--accent-dim); }
+.site-nav { display: flex; align-items: center; gap: 1.5rem; }
+.site-nav a { font-size: 0.9rem; color: var(--fg-mute); }
+.site-nav a:hover { color: var(--fg-strong); text-decoration: none; }
+.site-nav a[aria-current="page"] { color: var(--fg-strong); }
 
-@media (max-width: 40rem) {
-  .site-nav a:not(.gh) { display: none; }
+/* On a narrow screen the brand plus three links will not fit, and flex items
+   refuse to shrink below their content, so the header pushes the whole page
+   sideways. Drop the link to the page you are already on, and the Overview
+   link — the wordmark already goes there. Keyed on a class rather than on
+   aria-current, because the 404 page marks nothing current and would
+   otherwise keep all three. */
+@media (max-width: 34rem) {
+  .site-head .wrap { gap: 1.25rem; }
+  .site-nav { gap: 1.1rem; }
+  .site-nav a.nav-home,
+  .site-nav a[aria-current="page"] { display: none; }
 }
 
 /* ---------- hero ---------- */
 
-.hero { padding: 4.5rem 0 3rem; border-bottom: 1px solid var(--line); }
+.hero { padding: 5.5rem 0 3.5rem; }
 .hero h1 {
-  font-size: clamp(1.9rem, 5.2vw, 3rem);
-  margin-bottom: 1rem;
+  font-size: clamp(2rem, 5.5vw, 3.1rem);
+  letter-spacing: -0.032em;
+  margin-bottom: 1.25rem;
 }
-.hero h1 .dim { color: var(--fg-mute); }
+.hero h1 .dim { color: var(--fg-faint); }
 .hero .lede {
-  font-size: clamp(1rem, 2.1vw, 1.2rem);
+  font-size: clamp(1.02rem, 2vw, 1.15rem);
+  line-height: 1.65;
   color: var(--fg-mute);
-  max-width: 44rem;
-  margin-bottom: 1.75rem;
+  max-width: 40rem;
+  margin-bottom: 2rem;
 }
 .hero .lede strong { color: var(--fg); font-weight: 600; }
 
-.cta-row { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; }
-.btn {
-  font-family: var(--mono); font-size: 0.85rem; font-weight: 500;
-  padding: 0.6rem 1.05rem; border-radius: var(--radius);
-  border: 1px solid var(--line); color: var(--fg);
-  display: inline-flex; align-items: center; gap: 0.45rem;
-}
-.btn:hover { text-decoration: none; border-color: var(--accent-dim); color: var(--fg-strong); }
+.cta-row { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
+.btn { font-size: 0.93rem; color: var(--accent); }
 .btn-primary {
-  background: var(--accent); border-color: var(--accent);
-  color: #05121d; font-weight: 600;
+  background: var(--fg-strong); color: #fff;
+  padding: 0.6rem 1.15rem; border-radius: var(--radius);
+  font-size: 0.9rem; font-weight: 500;
 }
-.btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, #fff); color: #05121d; }
+.btn-primary:hover { background: #000; text-decoration: none; }
 
-/* ---------- terminal ---------- */
+/* ---------- code blocks ---------- */
 
-.term {
-  background: var(--term-bg);
-  border: 1px solid var(--term-line);
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 1.75rem 0;
-  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -12px rgba(0,0,0,.5);
-}
+.term { margin: 2rem 0; }
 .term-bar {
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.55rem 0.85rem;
-  border-bottom: 1px solid var(--term-line);
-  background: var(--term-bar);
+  display: flex; align-items: baseline;
+  font-family: var(--mono); font-size: 0.72rem;
+  color: var(--fg-faint); letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
 }
-.term-bar .dot { width: 9px; height: 9px; border-radius: 50%; background: #2c3846; }
-.term-bar .label {
-  font-family: var(--mono); font-size: 0.72rem; color: var(--fg-faint);
-  margin-left: 0.4rem;
-}
+.term-bar .dot { display: none; }
 .term-bar .copy {
   margin-left: auto; background: none; border: 0; cursor: pointer;
-  font-family: var(--mono); font-size: 0.7rem; color: var(--fg-faint);
-  padding: 0.15rem 0.4rem; border-radius: 3px;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--fg-faint);
+  padding: 0; letter-spacing: 0.02em;
 }
-.term-bar .copy:hover { color: var(--term-fg); background: var(--term-line); }
+.term-bar .copy:hover { color: var(--accent); }
 
 .term pre {
-  margin: 0; padding: 1rem 1.1rem;
+  margin: 0; padding: 1rem 1.15rem;
+  background: var(--bg-code);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   overflow-x: auto;
-  font-family: var(--mono); font-size: 0.8rem; line-height: 1.6;
-  color: var(--term-fg);
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  font-family: var(--mono); font-size: 0.795rem; line-height: 1.65;
+  color: #3c3d41;
   tab-size: 2;
 }
-.term pre code { font-size: inherit; background: none; border: 0; padding: 0; white-space: pre; }
+.term pre code { font-size: inherit; background: none; padding: 0; white-space: pre; }
 
-/* terminal token colours */
-.t-prompt  { color: var(--confirmed); }
-.t-cmd     { color: #e8eef5; }
+.t-prompt  { color: var(--fg-glyph); }
+.t-cmd     { color: var(--fg-strong); font-weight: 500; }
 .t-flag    { color: var(--fg-mute); }
-.t-src     { color: #e8eef5; font-weight: 600; }
-.t-arrow   { color: var(--fg-faint); }
+.t-src     { color: var(--fg-strong); font-weight: 600; }
+.t-arrow   { color: var(--fg-glyph); }
 .t-cloud   { color: var(--cloud); }
 .t-ext     { color: var(--external); }
 .t-ident   { color: var(--identity); }
 .t-opaque  { color: var(--opaque); }
-.t-meta    { color: var(--fg-faint); }
+.t-meta    { color: #6b6d73; }  /* evidence locators are content: 5.1:1 */
 .t-conf    { color: var(--confirmed); }
 .t-likely  { color: var(--likely); }
 .t-poss    { color: var(--possible); }
 .t-warn    { color: var(--likely); }
-.t-comment { color: var(--fg-faint); font-style: italic; }
 .t-add     { color: var(--confirmed); }
 
 /* ---------- sections ---------- */
 
-section { padding: 3.5rem 0; border-bottom: 1px solid var(--line-soft); }
-section:last-of-type { border-bottom: 0; }
+section { padding: 4rem 0; }
+section + section { border-top: 1px solid var(--line-soft); }
 
 .sec-label {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--fg-faint); margin-bottom: 0.75rem;
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-faint); margin-bottom: 0.9rem;
 }
-section > .wrap > h2 { font-size: clamp(1.3rem, 3vw, 1.7rem); margin-bottom: 0.9rem; }
-.sec-intro { color: var(--fg-mute); max-width: 46rem; margin-bottom: 2rem; }
+section > .wrap > h2 {
+  font-size: clamp(1.35rem, 3vw, 1.65rem);
+  letter-spacing: -0.026em;
+  margin-bottom: 1rem;
+}
+.sec-intro { color: var(--fg-mute); max-width: 42rem; margin-bottom: 2.5rem; }
 
-.grid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+/* Columns, not boxes. The old grid drew a border around every claim, which
+   made three short paragraphs look like a control panel. */
+.grid { display: grid; gap: 2.5rem 3rem; }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-@media (max-width: 52rem) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+.grid-2 { grid-template-columns: repeat(2, 1fr); gap: 2.75rem 4rem; }
+@media (max-width: 52rem) {
+  .grid-3, .grid-2 { grid-template-columns: 1fr; gap: 2.25rem; }
+}
 
-.cell { background: var(--bg-raised); padding: 1.4rem; }
-.cell h3 { font-size: 0.95rem; margin-bottom: 0.5rem; }
-.cell p { color: var(--fg-mute); font-size: 0.92rem; margin: 0; }
+.cell h3 { font-size: 0.98rem; margin-bottom: 0.45rem; letter-spacing: -0.014em; }
+.cell p { color: var(--fg-mute); font-size: 0.93rem; margin: 0; }
 .cell .tag {
-  display: inline-block; font-family: var(--mono); font-size: 0.68rem;
-  color: var(--fg-faint); border: 1px solid var(--line);
-  border-radius: 3px; padding: 0.05rem 0.35rem; margin-bottom: 0.6rem;
+  display: block; font-family: var(--mono); font-size: 0.7rem;
+  color: var(--fg-faint); margin-bottom: 0.45rem; letter-spacing: 0.01em;
 }
 
 /* ---------- tables ---------- */
 
-.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
-table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
-th, td { text-align: left; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-thead th {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--fg-faint);
-  background: var(--bg-raised); border-bottom: 1px solid var(--line);
-  position: sticky; top: 0;
+.table-scroll { overflow-x: auto; margin: 1.5rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.89rem; }
+th, td {
+  text-align: left; padding: 0.7rem 1.1rem 0.7rem 0;
+  border-bottom: 1px solid var(--line-soft); vertical-align: top;
 }
+th:last-child, td:last-child { padding-right: 0; }
+thead th {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--fg-faint); font-weight: 400;
+  border-bottom: 1px solid var(--line); padding-bottom: 0.55rem;
+}
+tbody td { color: var(--fg-mute); }
+tbody td:first-child { color: var(--fg); }
 tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover td { background: var(--accent-wash); }
 
 /* ---------- callouts ---------- */
 
 .note {
-  border-left: 3px solid var(--accent-dim);
-  background: var(--accent-wash);
-  padding: 0.9rem 1.1rem;
-  border-radius: 0 var(--radius) var(--radius) 0;
-  margin: 1.5rem 0;
+  border-left: 2px solid var(--line);
+  padding: 0.15rem 0 0.15rem 1.15rem;
+  margin: 1.75rem 0;
   font-size: 0.93rem;
+  color: var(--fg-mute);
 }
-.note strong { color: var(--fg-strong); }
-.note.warn { border-left-color: var(--likely); background: rgba(226, 189, 99, 0.07); }
+.note strong { color: var(--fg-strong); font-weight: 600; }
+.note.warn { border-left-color: var(--likely); }
 
 /* ---------- docs layout ---------- */
 
-.docs { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 3rem; padding: 2.75rem 0 5rem; }
-@media (max-width: 58rem) { .docs { grid-template-columns: 1fr; gap: 1.5rem; } }
+.docs {
+  display: grid; grid-template-columns: 13rem minmax(0, 1fr);
+  gap: 4rem; padding: 3.5rem 0 6rem;
+}
+@media (max-width: 58rem) {
+  .docs { grid-template-columns: 1fr; gap: 2rem; padding-top: 2.25rem; }
+}
 
-.docs-nav { font-size: 0.88rem; }
+.docs-nav { font-size: 0.9rem; }
 @media (min-width: 58rem) {
-  .docs-nav { position: sticky; top: 5rem; align-self: start; max-height: calc(100vh - 7rem); overflow-y: auto; }
+  .docs-nav { position: sticky; top: 2.5rem; align-self: start; }
 }
 .docs-nav .group {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--fg-faint);
-  margin: 1.4rem 0 0.5rem;
+  margin: 2rem 0 0.7rem;
 }
 .docs-nav .group:first-child { margin-top: 0; }
 .docs-nav ul { list-style: none; margin: 0; padding: 0; }
-.docs-nav li { margin: 0; }
-.docs-nav a {
-  display: block; padding: 0.28rem 0.6rem; margin-left: -0.6rem;
-  color: var(--fg-mute); border-radius: var(--radius);
-}
-.docs-nav a:hover { color: var(--fg-strong); background: var(--line-soft); text-decoration: none; }
-.docs-nav a[aria-current="page"] {
-  color: var(--fg-strong); background: var(--accent-wash);
-  box-shadow: inset 2px 0 0 var(--accent);
-}
+.docs-nav a { display: block; padding: 0.24rem 0; color: var(--fg-mute); }
+.docs-nav a:hover { color: var(--fg-strong); text-decoration: none; }
+.docs-nav a[aria-current="page"] { color: var(--fg-strong); font-weight: 500; }
 
-.docs-body { min-width: 0; max-width: 48rem; }
-.docs-body h1 { font-size: clamp(1.5rem, 3.5vw, 2rem); margin-bottom: 0.6rem; }
-.docs-body .page-lede { color: var(--fg-mute); font-size: 1.02rem; margin-bottom: 2.25rem; }
-.docs-body h2 {
-  font-size: 1.15rem; margin: 2.75rem 0 0.85rem;
-  padding-top: 0.6rem; border-top: 1px solid var(--line-soft);
+.docs-body { min-width: 0; max-width: 44rem; }
+.docs-body h1 {
+  font-size: clamp(1.65rem, 3.5vw, 2.1rem);
+  letter-spacing: -0.03em; margin-bottom: 0.7rem;
 }
-.docs-body h3 { font-size: 0.98rem; margin: 1.9rem 0 0.6rem; }
-.docs-body ul, .docs-body ol { margin: 0 0 1rem; padding-left: 1.3rem; color: var(--fg); }
-.docs-body li { margin-bottom: 0.4rem; }
+.docs-body .page-lede {
+  color: var(--fg-mute); font-size: 1.05rem; margin-bottom: 2.75rem;
+}
+.docs-body h2 {
+  font-size: 1.2rem; letter-spacing: -0.022em;
+  margin: 3.25rem 0 0.9rem;
+}
+.docs-body h3 { font-size: 1rem; margin: 2.1rem 0 0.6rem; }
+.docs-body ul, .docs-body ol { margin: 0 0 1.1rem; padding-left: 1.15rem; }
+.docs-body li { margin-bottom: 0.45rem; }
 .docs-body li::marker { color: var(--fg-faint); }
 
-.anchor { color: var(--fg-faint); font-weight: 400; opacity: 0; margin-left: 0.4rem; }
-h2:hover .anchor, h3:hover .anchor { opacity: 1; }
+.anchor {
+  color: var(--fg-faint); font-weight: 400; opacity: 0;
+  margin-left: 0.4rem; transition: opacity .12s;
+}
+h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .anchor:hover { text-decoration: none; color: var(--accent); }
 
 .page-nav {
   display: flex; justify-content: space-between; gap: 1rem;
-  margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
-  font-family: var(--mono); font-size: 0.82rem;
+  margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line);
+  font-size: 0.89rem;
 }
 .page-nav a { color: var(--fg-mute); }
-.page-nav a:hover { color: var(--fg-strong); }
+.page-nav a:hover { color: var(--accent); }
 
 /* ---------- footer ---------- */
 
 .site-foot {
   border-top: 1px solid var(--line);
-  padding: 2.25rem 0 3rem;
+  padding: 2rem 0 3.5rem;
   color: var(--fg-faint);
   font-size: 0.85rem;
 }
-.site-foot .wrap { display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: baseline; }
+.site-foot .wrap { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; align-items: baseline; }
 .site-foot .spacer { margin-left: auto; }
 .site-foot a { color: var(--fg-mute); }
 
 /* ---------- misc ---------- */
 
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1.25rem; font-size: 0.9rem; }
-.kv dt { font-family: var(--mono); color: var(--fg-faint); font-size: 0.82rem; }
-.kv dd { margin: 0; color: var(--fg); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1.5rem; font-size: 0.91rem; }
+.kv dt { font-family: var(--mono); color: var(--fg-strong); font-size: 0.82rem; }
+.kv dd { margin: 0; color: var(--fg-mute); }
 
 .skip {
   position: absolute; left: -9999px;
-  background: var(--accent); color: #05121d; padding: 0.6rem 1rem;
-  border-radius: var(--radius); font-family: var(--mono); font-size: 0.85rem;
+  background: var(--fg-strong); color: #fff; padding: 0.6rem 1rem;
+  border-radius: var(--radius); font-size: 0.88rem;
 }
 .skip:focus { left: 1rem; top: 1rem; z-index: 50; }

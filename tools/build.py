@@ -31,20 +31,6 @@ DOCS = [
 ]
 
 
-# Inline so the toggle needs no network and no icon font. CSS decides which of
-# the two is visible, so the button is correct before any script runs.
-THEME_ICON = (
-    '<svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" '
-    'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-    '<path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6Z"/></svg>'
-    '<svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" '
-    'stroke-width="1.4" stroke-linecap="round" aria-hidden="true">'
-    '<circle cx="8" cy="8" r="3.1"/>'
-    '<path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1'
-    'M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>'
-)
-
-
 def head(title, desc, rel, *, go_import=True, page_class=""):
     """rel is the path prefix back to the site root ('' or '../')."""
     tags = []
@@ -75,7 +61,6 @@ def head(title, desc, rel, *, go_import=True, page_class=""):
   {extra}
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
   <link rel="stylesheet" href="{rel}assets/style.css">
-  <script src="{rel}assets/theme-boot.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -83,21 +68,20 @@ def head(title, desc, rel, *, go_import=True, page_class=""):
 
 
 def header(rel, current):
-    def link(href, label, key):
+    def link(href, label, key, cls=""):
         cur = ' aria-current="page"' if key == current else ""
-        return f'<a href="{rel}{href}"{cur}>{label}</a>'
+        c = f' class="{cls}"' if cls else ""
+        return f'<a href="{rel}{href}"{c}{cur}>{label}</a>'
 
     return f"""<header class="site-head">
   <div class="wrap">
     <a class="brand" href="{rel}index.html">
-      <span class="mark">&#9679;</span> reachmap
-      <span class="ver">{VERSION}</span>
+      reachmap<span class="ver">{VERSION}</span>
     </a>
     <nav class="site-nav">
-      {link("index.html", "Overview", "home")}
+      {link("index.html", "Overview", "home", "nav-home")}
       {link("docs/index.html", "Documentation", "docs")}
       <a class="gh" href="{GH}">GitHub</a>
-      <button class="theme-toggle" type="button" aria-label="Toggle theme">{THEME_ICON}</button>
     </nav>
   </div>
 </header>
