@@ -51,8 +51,10 @@ One-time, in this repository:
    The workflow in `.github/workflows/pages.yml` does the rest on every push to `main`.
 2. The site goes live at `https://reachmap.github.io/reachmap.dev-website/`.
 
-The `.nojekyll` file stops Pages running the content through Jekyll, which would
-otherwise ignore any path beginning with an underscore.
+`.nojekyll` is kept as insurance rather than a requirement: a workflow that uploads
+a Pages artifact serves the files as they are and never runs Jekyll. It only starts
+mattering if this repository is ever switched to publishing from a branch, where
+Jekyll would otherwise drop any path beginning with an underscore.
 
 ## Pointing `reachmap.dev` at it
 
@@ -71,19 +73,25 @@ The meta tag is already in every page of this site:
 So the sequence is:
 
 1. Register `reachmap.dev`.
-2. Add a `CNAME` file at the repository root containing exactly `reachmap.dev`.
-3. Point DNS at GitHub Pages — apex `A` records to `185.199.108.153`,
+2. Point DNS at GitHub Pages — apex `A` records to `185.199.108.153`,
    `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (and the matching `AAAA`
-   records `2606:50c0:8000::153`, `:8001::153`, `:8002::153`, `:8003::153`), plus a
-   `CNAME` record for `www` pointing at `reachmap.github.io`.
-4. **Settings → Pages → Custom domain**, enter `reachmap.dev`, then tick
-   **Enforce HTTPS** once the certificate is issued.
-5. Verify the vanity path resolves before tagging a release:
+   records `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`,
+   `2606:50c0:8003::153`), plus a `CNAME` record for `www` pointing at
+   `reachmap.github.io`.
+3. **Settings → Pages → Custom domain**, enter `reachmap.dev`, Save, then tick
+   **Enforce HTTPS** once the certificate is issued (can take up to 24 hours).
+4. Verify the vanity path resolves before tagging a release:
 
    ```bash
    curl -s "https://reachmap.dev/?go-get=1" | grep go-import
    GOPROXY=direct go install reachmap.dev/cmd/reachmap@latest
    ```
+
+> **Do not add a `CNAME` file to this repository.** That step applies only to sites
+> published from a branch. This site publishes from a GitHub Actions workflow, and
+> GitHub ignores any `CNAME` file in that mode — the custom domain lives solely in
+> Settings → Pages. A committed `CNAME` file here would do nothing except look
+> authoritative and mislead whoever reads it next.
 
 Every link in this site is relative, so it works unchanged at both the project URL
 and the apex domain — no rebuild needed when the domain lands.
