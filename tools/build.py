@@ -36,6 +36,30 @@ DOCS = [
 ]
 
 
+# A mark drawn from what the tool does: one node, three edges leaving it, one
+# of them dashed because a dependency you cannot resolve is still a dependency.
+# Geometric, legible at 16px, and the same shape at any size — so it works as
+# the wordmark lockup, the favicon and the social card without redrawing.
+LOGO = (
+    '<svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    'stroke-width="1.8" stroke-linecap="round" aria-hidden="true">'
+    '<circle cx="5" cy="12" r="2.6" fill="currentColor" stroke="none"/>'
+    '<path d="M7.6 12h4"/><path d="M11.6 12 17 5.6"/><path d="M11.6 12 17 18.4"/>'
+    '<path d="M11.6 12H19" stroke-dasharray="2 2.4"/>'
+    '<circle cx="19.4" cy="5.2" r="1.9"/><circle cx="19.4" cy="18.8" r="1.9"/>'
+    '</svg>'
+)
+
+# Same mark as a standalone favicon, sized and coloured for a 16px tab.
+FAVICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="%231a56b8" stroke-width="2" stroke-linecap="round">'
+    '<circle cx="5" cy="12" r="2.8" fill="%231a56b8" stroke="none"/>'
+    '<path d="M7.8 12h3.8"/><path d="M11.6 12 17 5.6"/><path d="M11.6 12 17 18.4"/>'
+    '<circle cx="19.2" cy="5.2" r="2"/><circle cx="19.2" cy="18.8" r="2"/></svg>'
+)
+
+
 def head(title, desc, rel, *, go_import=True, page_class=""):
     """rel is the path prefix back to the site root ('' or '../')."""
     tags = []
@@ -63,8 +87,16 @@ def head(title, desc, rel, *, go_import=True, page_class=""):
   <meta property="og:title" content="{html.escape(title)}">
   <meta property="og:description" content="{html.escape(desc)}">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="https://reachmap.github.io/reachmap.dev-website/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   {extra}
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#127760;</text></svg>">
+  <link rel="icon" href="{rel}assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{rel}assets/icon-180.png">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="preload" href="{rel}assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{rel}assets/fonts/jetbrains-mono-latin-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{rel}assets/style.css">
 </head>
 <body>
@@ -81,7 +113,7 @@ def header(rel, current):
     return f"""<header class="site-head">
   <div class="wrap">
     <a class="brand" href="{rel}index.html">
-      reachmap<span class="ver">{VERSION}</span>
+      {LOGO}reachmap<span class="ver">{VERSION}</span>
     </a>
     <nav class="site-nav">
       {link("index.html", "Overview", "home", "nav-home")}
@@ -361,10 +393,10 @@ PAYOFFS = [
 ]
 
 STATS = [
-    ("16", "", "detectors, nine of which read things that are not in the pod spec"),
+    ("16", "", "detectors, nine reading things that never appear in a pod spec"),
     ("142", "", "catalog rules across AWS, GCP, Azure and third-party APIs"),
-    ("1", "", "vendored dependency, so it builds offline as one static binary"),
-    ("0", "", "agents, sidecars or cluster credentials required to start"),
+    ("1", "", "vendored dependency — it builds offline as one static binary"),
+    ("0", "", "agents, sidecars or cluster credentials needed to start"),
 ]
 
 BLIND_SPOTS = [
@@ -1365,6 +1397,7 @@ all serve <code>169.254.169.254</code>, so labelling it as any one of them would
 
 
 def main():
+    write("assets/favicon.svg", FAVICON_SVG.replace("%23", "#"))
     write("index.html", landing())
     write("docs/index.html", docs_overview())
     write("docs/quickstart.html", docs_quickstart())

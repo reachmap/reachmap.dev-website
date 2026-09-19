@@ -1,3 +1,32 @@
+/* ---------- typeface ----------
+   Self-hosted, not pulled from a CDN. Three reasons, in order: a system font
+   stack renders as a different typeface on every operating system, which is
+   the single loudest signal that a page was not designed; a third-party font
+   host is a request the site does not control and a privacy consideration it
+   does not need; and vendored files mean the site builds and renders offline
+   like the tool it documents. 88KB for both, OFL, licences in assets/fonts/. */
+
+@font-face {
+  font-family: "InterVar";
+  src: url("fonts/inter-latin-var.woff2") format("woff2-variations"),
+       url("fonts/inter-latin-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;   /* text is readable in the fallback before this lands */
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC,
+                 U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrainsMonoVar";
+  src: url("fonts/jetbrains-mono-latin-var.woff2") format("woff2-variations"),
+       url("fonts/jetbrains-mono-latin-var.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Reachmap — light, minimal.
    One surface, hairline rules, and whitespace doing the work that borders and
    shadows used to. Colour appears in exactly two places: links, and the
@@ -53,15 +82,26 @@
   --identity:  #1a7a4e;
   --opaque:    #a8472a;
 
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+  --mono: "JetBrainsMonoVar", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: "InterVar", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
+
+  /* A 4px spacing scale, used instead of ad-hoc rem values. The old sheet had
+     2.75rem, 3.25rem, 1.15rem and 0.45rem within a few rules of each other,
+     which is the kind of near-miss that reads as "slightly off" without the
+     reader being able to say why. */
+  --s1: .25rem;  --s2: .5rem;   --s3: .75rem;  --s4: 1rem;
+  --s5: 1.5rem;  --s6: 2rem;    --s7: 2.5rem;  --s8: 3rem;
+  --s9: 4rem;    --s10: 5rem;   --s11: 6rem;
+
+  /* Three radii, not seven. */
+  --r-sm: 4px; --r-md: 8px; --r-lg: 12px;
 
   /* 64rem, not narrower: real scan output runs long, and this is the width at
      which the hero block stops clipping. Prose is capped separately and much
      tighter, so the extra width only ever goes to code and tables. */
   --wrap: 64rem;
-  --radius: 5px;
+  --radius: var(--r-sm);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -73,10 +113,16 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 400 16px/1.7 var(--sans);
+  font: 400 16px/1.68 var(--sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Inter's contextual alternates fix the "ti"/"fi" pairs; tabular figures in
+     tables and code keep columns of numbers from wobbling. */
+  font-feature-settings: "calt" 1;
   text-rendering: optimizeLegibility;
 }
+
+table, .term pre, .kv dt, .stat .s-num { font-variant-numeric: tabular-nums; }
 
 .wrap { width: min(100% - 2.5rem, var(--wrap)); margin-inline: auto; }
 
@@ -90,9 +136,12 @@ h1, h2, h3 {
   color: var(--fg-strong);
   font-family: var(--sans);
   font-weight: 600;
-  letter-spacing: -0.021em;
-  line-height: 1.25;
+  letter-spacing: -0.022em;
+  line-height: 1.22;
   margin: 0;
+  /* Inter's optical tracking wants to tighten as size grows; these are set per
+     level below rather than inherited from one value. */
+  text-wrap: balance;
 }
 
 p { margin: 0 0 1.1rem; }
@@ -104,7 +153,7 @@ code { font-family: var(--mono); font-size: 0.86em; }
    technical paragraph into a fence. */
 :not(pre) > code {
   background: var(--bg-soft);
-  border-radius: 3px;
+  border-radius: var(--r-sm);
   padding: 0.12em 0.34em;
   color: var(--fg-strong);
   overflow-wrap: break-word;
@@ -122,13 +171,19 @@ td > code, th > code, .kv dt code { white-space: nowrap; }
   height: 3.75rem;
 }
 .brand {
-  font-family: var(--mono); font-weight: 500; font-size: 0.95rem;
+  font-family: var(--sans); font-weight: 600; font-size: 1rem;
   color: var(--fg-strong);
-  display: inline-flex; align-items: baseline; gap: 0.5rem;
-  margin-right: auto; letter-spacing: -0.01em;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  margin-right: auto; letter-spacing: -0.022em;
 }
+.brand .mark { width: 18px; height: 18px; display: block; color: var(--accent); }
 .brand:hover { text-decoration: none; }
-.brand .ver { font-size: 0.72rem; color: var(--fg-faint); font-weight: 400; }
+.brand .ver {
+  font-size: 0.68rem; font-weight: 500; color: var(--fg-mute);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 0.1rem 0.42rem; line-height: 1.5;
+  letter-spacing: 0;
+}
 
 .site-nav { display: flex; align-items: center; gap: 1.5rem; }
 .site-nav a { font-size: 0.9rem; color: var(--fg-mute); }
@@ -142,10 +197,16 @@ td > code, th > code, .kv dt code { white-space: nowrap; }
    aria-current, because the 404 page marks nothing current and would
    otherwise keep all three. */
 @media (max-width: 34rem) {
-  .site-head .wrap { gap: 1.25rem; }
-  .site-nav { gap: 1.1rem; }
+  .site-head .wrap { gap: var(--s4); }
+  .site-nav { gap: var(--s3); }
+  .site-nav a { font-size: 0.85rem; }
   .site-nav a.nav-home,
   .site-nav a[aria-current="page"] { display: none; }
+  /* The version badge is the first thing to go: the wordmark and the two
+     links are navigation, the badge is decoration. The mark plus a 16px
+     wordmark plus a badge plus two links does not fit 280px of content width,
+     and the 404 page keeps both links because it marks neither as current. */
+  .brand .ver { display: none; }
 }
 
 /* ---------- hero ---------- */
@@ -166,24 +227,37 @@ td > code, th > code, .kv dt code { white-space: nowrap; }
 }
 .hero .lede strong { color: var(--fg); font-weight: 600; }
 
-.cta-row { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
-.btn { font-size: 0.93rem; color: var(--accent); }
-.btn-primary {
-  background: var(--fg-strong); color: #fff;
-  padding: 0.6rem 1.15rem; border-radius: var(--radius);
-  font-size: 0.9rem; font-weight: 500;
+.cta-row { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+
+/* Two weights of button, both the same shape and height. A primary pill next
+   to a bare text link read as an unfinished pair. */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  font-size: 0.9rem; font-weight: 500; line-height: 1;
+  padding: 0.68rem 1.05rem; border-radius: var(--r-md);
+  border: 1px solid var(--line); color: var(--fg-strong);
+  background: var(--bg);
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
-.btn-primary:hover { background: #000; text-decoration: none; }
+.btn:hover { text-decoration: none; background: var(--bg-soft); border-color: var(--fg-faint); }
+.btn-primary {
+  background: var(--fg-strong); border-color: var(--fg-strong); color: #fff;
+}
+.btn-primary:hover { background: #000; border-color: #000; color: #fff; }
+.band-ink .btn { border-color: #2c3a49; color: var(--fg-strong); background: transparent; color: #dbe6f2; }
+.band-ink .btn:hover { background: #18222e; border-color: #3c4c5e; }
 
 /* ---------- code blocks ---------- */
 
 .term { margin: 2rem 0; }
 .term-bar {
-  display: flex; align-items: baseline;
+  display: flex; align-items: baseline; gap: var(--s3);
   font-family: var(--mono); font-size: 0.72rem;
   color: var(--fg-faint); letter-spacing: 0.02em;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--s2);
 }
+.term-bar .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.term-bar .copy { flex: none; }
 .term-bar .dot { display: none; }
 .term-bar .copy {
   margin-left: auto; background: none; border: 0; cursor: pointer;
@@ -233,6 +307,7 @@ section.band-soft { background: var(--bg-soft); }
 section.band-soft .term pre,
 section.band-soft .pr-mock,
 section.band-soft .card { background: #fff; }
+section.band-soft .next a { background: #fff; }
 section.band-soft .hero-art { background: #fff; }
 section.band-soft + section.band-soft { border-top: 1px solid var(--line); }
 section.plain + section.plain { border-top: 1px solid var(--line-soft); }
@@ -277,9 +352,9 @@ section.band-ink .btn-primary:hover { background: #dbe6f2; color: #0e1319; }
   text-transform: uppercase; color: var(--fg-faint); margin-bottom: 0.9rem;
 }
 section h2 {
-  font-size: clamp(1.4rem, 3vw, 1.75rem);
-  letter-spacing: -0.028em;
-  margin-bottom: 1rem;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  letter-spacing: -0.032em;
+  margin-bottom: var(--s4);
 }
 section h3 { font-size: 1rem; letter-spacing: -0.016em; }
 .sec-intro { color: var(--fg-mute); max-width: 42rem; margin-bottom: 2.5rem; }
@@ -544,7 +619,7 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 /* ---------- pull-request comment illustration ---------- */
 
 .pr-mock {
-  border: 1px solid var(--line); border-radius: 7px; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden;
   margin: 1.75rem 0; font-size: 0.88rem; background: var(--bg);
 }
 .pr-head {
@@ -628,8 +703,8 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; } }
 
 .hero h1 {
-  font-size: clamp(2.1rem, 4.6vw, 3.35rem);
-  letter-spacing: -0.036em; line-height: 1.12;
+  font-size: clamp(2.15rem, 4.7vw, 3.4rem);
+  letter-spacing: -0.042em; line-height: 1.08;
   margin-bottom: 1.2rem;
 }
 .hero .lede { max-width: none; margin-bottom: 2rem; }
@@ -637,7 +712,7 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .hero-art {
   background: var(--bg-soft);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 1.25rem 1.25rem 1rem;
 }
 .hero-art .dia { margin: 0; }
@@ -665,42 +740,58 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 }
 .stat .s-unit { font-size: 0.5em; font-weight: 500; color: var(--fg-mute); letter-spacing: -0.01em; }
 .stat .s-label {
-  display: block; margin-top: 0.6rem; font-size: 0.86rem; color: var(--fg-mute);
-  max-width: 13rem;
+  display: block; margin-top: var(--s3); font-size: 0.875rem; line-height: 1.5;
+  color: var(--fg-mute); max-width: 15rem; text-wrap: pretty;
 }
 .band-ink .stat .s-num { color: #fff; }
 
 /* ---------- tinted cards ---------- */
 
-.cards { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cards { display: grid; gap: var(--s4); }
 .cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 52rem) { .cards-2, .cards-3 { grid-template-columns: minmax(0, 1fr); } }
 
-.card { background: var(--bg); padding: 1.6rem 1.5rem; }
+.card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s5);
+  position: relative;
+  overflow: hidden;            /* clip the accent bar to the radius */
+  transition: border-color .15s ease;
+}
+.card:hover { border-color: #d5d7d2; }
+/* Colour lives in a 2px bar at the top edge and in the icon, not in a pastel
+   fill across the whole card. A full wash of four pastels reads consumer; the
+   same four hues as a rule read technical, and the page keeps its variety from
+   the dark bands and the layout changes instead. */
+.card::before {
+  content: ""; position: absolute; inset: 0 auto auto 0;
+  width: 100%; height: 3px; background: transparent;
+}
 .card h3 { font-size: 1rem; margin-bottom: 0.5rem; letter-spacing: -0.016em; }
 .card p { color: var(--fg-mute); font-size: 0.92rem; margin: 0; }
 
-/* One tint per card, so a row of four reads as four things rather than as one
-   grey slab. The hue matches what the card is about wherever the palette
-   already means something — clay is the unresolved-secret colour. */
-.card.t-b { background: var(--tint-blue); }
-.card.t-g { background: var(--tint-green); }
-.card.t-a { background: var(--tint-amber); }
-.card.t-p { background: var(--tint-purple); }
-.card.t-c { background: var(--tint-clay); }
+/* One hue per card, as a rule rather than a wash. */
+.card.t-b::before { background: var(--cloud); }
+.card.t-g::before { background: var(--identity); }
+.card.t-a::before { background: var(--likely); }
+.card.t-p::before { background: var(--external); }
+.card.t-c::before { background: var(--opaque); }
 
 .card .c-chip {
   display: inline-grid; place-items: center;
-  width: 2rem; height: 2rem; border-radius: 7px;
-  background: var(--bg); border: 1px solid var(--line);
-  margin-bottom: 0.9rem;
+  width: 2rem; height: 2rem; border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  margin-bottom: var(--s3);
 }
 .card .c-chip .p-icon { width: 17px; height: 17px; }
-.card.t-b .c-chip { color: var(--cloud); border-color: var(--edge-blue); }
-.card.t-g .c-chip { color: var(--identity); border-color: var(--edge-green); }
-.card.t-a .c-chip { color: var(--likely); border-color: var(--edge-amber); }
-.card.t-p .c-chip { color: var(--external); border-color: var(--edge-purple); }
+.card.t-b .c-chip { color: var(--cloud);    border-color: var(--edge-blue);   background: var(--tint-blue); }
+.card.t-g .c-chip { color: var(--identity); border-color: var(--edge-green);  background: var(--tint-green); }
+.card.t-a .c-chip { color: var(--likely);   border-color: var(--edge-amber);  background: var(--tint-amber); }
+.card.t-p .c-chip { color: var(--external); border-color: var(--edge-purple); background: var(--tint-purple); }
+.card.t-c .c-chip { color: var(--opaque);   border-color: var(--edge-clay);   background: var(--tint-clay); }
 .card .i-dot { fill: currentColor; stroke: none; }
 .card .c-q {
   display: block; margin-top: 0.8rem; font-size: 0.86rem;
@@ -713,10 +804,10 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
   letter-spacing: 0.06em;
 }
 .card .c-det {
-  display: inline-block; font-family: var(--mono); font-size: 0.7rem;
-  padding: 0.12rem 0.42rem; border-radius: 3px;
-  background: var(--bg); border: 1px solid var(--line); color: var(--fg-mute);
-  margin-left: 0.5rem;
+  display: inline-block; font-family: var(--mono); font-size: 0.72rem;
+  padding: 0.1rem 0.44rem; border-radius: var(--r-sm);
+  background: var(--bg-soft); border: 1px solid var(--line); color: var(--fg-mute);
+  margin-left: var(--s2);
 }
 
 /* ---------- split: text beside art ---------- */

@@ -9,13 +9,28 @@ the files in this repository as they are.
 ## Layout
 
 ```
-index.html          Landing page
-404.html            Not-found page
-docs/               Quickstart, detectors, cluster mode, CI & policy, catalog
-assets/             style.css, site.js, theme-boot.js
-tools/build.py      Generator — regenerates every HTML file from one template
-tools/checklinks.py Internal link checker, run in CI
+index.html            Landing page
+404.html              Not-found page
+docs/                 Quickstart, detectors, cluster mode, CI & policy, catalog
+assets/               style.css, site.js, favicon.svg, og.png, icon-180.png
+assets/fonts/         Inter and JetBrains Mono (variable woff2) + their OFL licences
+tools/build.py        Generator — regenerates every HTML file from one template
+tools/diagrams.py     The inline SVG diagrams
+tools/checklinks.py   Internal link checker, run in CI
+tools/make_images.py  Re-renders og.png and icon-180.png
 ```
+
+## Typefaces
+
+Inter and JetBrains Mono, both variable, both self-hosted from `assets/fonts/`
+rather than fetched from a font CDN. 88KB for the pair, preloaded, with
+`font-display: swap` so text is readable before they land. Both are SIL Open
+Font License; the licences are alongside the files, which is what the OFL
+requires when you redistribute.
+
+Self-hosting rather than linking a CDN keeps the site on one origin, removes a
+third-party request, and means it renders the same offline as online — matching
+the tool it documents, which vendors its one dependency for the same reason.
 
 ## Editing
 
@@ -35,6 +50,17 @@ CI fails the build if the committed HTML does not match what the generator produ
 so the two cannot silently diverge.
 
 Editing `assets/style.css` needs no regeneration.
+
+The social card and touch icon are rendered from the live stylesheet rather than
+drawn by hand, so they cannot drift from the site's own type and palette:
+
+```bash
+pip install playwright && playwright install chromium
+python3 tools/make_images.py
+```
+
+The outputs are committed, so this is only needed when the card's content or the
+palette changes.
 
 ### Previewing
 
@@ -94,7 +120,10 @@ So the sequence is:
 > authoritative and mislead whoever reads it next.
 
 Every link in this site is relative, so it works unchanged at both the project URL
-and the apex domain — no rebuild needed when the domain lands.
+and the apex domain — no rebuild needed when the domain lands. The one exception
+is `og:image`, which the Open Graph spec requires to be absolute: update the host
+in `tools/build.py` and regenerate when the domain changes, or the social card
+will keep pointing at the github.io URL.
 
 ### The other prerequisite
 
