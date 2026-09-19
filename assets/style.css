@@ -534,17 +534,43 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .n-label.opaque { fill: var(--opaque); }
 .e-cloud, .e-ext, .e-ident, .e-opaque { opacity: .5; }
 
-/* blast radius */
-.n-box.hit { stroke: var(--likely); stroke-width: 1.8; fill: #fffaf0; }
-.n-box.down { stroke: var(--likely); stroke-width: 1.8; fill: #fffaf0; }
-.n-label.down { fill: var(--likely); }
-.e-hot { stroke: var(--likely); stroke-width: 1.8; opacity: 1; }
-.pulse { fill: var(--likely); }
-.d-note {
-  font-family: var(--mono); font-size: 11px; fill: var(--likely);
+/* ---------- hero: blast radius ---------- */
+
+.br-cap {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  fill: var(--fg-faint);
 }
-.d-ask { font-family: var(--sans); font-size: 14px; fill: var(--fg-mute); }
-.d-ans { font-family: var(--sans); font-size: 14px; font-weight: 600; fill: var(--fg-strong); }
+.br-box { fill: var(--bg); stroke: var(--line); stroke-width: 1; }
+.br-name { font-family: var(--mono); font-size: 13px; fill: var(--fg-strong); }
+.br-kind { font-family: var(--sans); font-size: 11px; fill: var(--fg-faint); }
+.br-node .g-icon { color: var(--fg-faint); }
+.br-status { fill: var(--confirmed); }
+
+/* The two states the diagram turns on. Both are the resting appearance, so a
+   reader who never sees the animation still sees the finished answer. */
+.br-down .br-box { stroke: var(--likely); stroke-width: 1.6; fill: #fffcf5; }
+.br-down .br-name { fill: #6f4f0c; }
+.br-down .g-icon { color: var(--likely); }
+.br-hit .br-box { stroke: var(--likely); stroke-width: 1.6; fill: #fffcf5; }
+.br-hit .g-icon { color: var(--likely); }
+.br-hit .br-status { fill: var(--likely); }
+
+.br-edge { fill: none; }
+.br-cold { stroke: var(--line); stroke-width: 1.3; }
+.br-hot  { stroke: var(--likely); stroke-width: 2.1; }
+
+/* The travelling impact dash. Invisible until the sequence reaches it, and
+   hidden entirely for readers who asked for less motion. */
+.br-impact { fill: none; stroke: #d9a43f; stroke-width: 2.6; stroke-linecap: round; opacity: 0; }
+
+.br-ring { fill: var(--likely); opacity: 0; transform-box: fill-box; transform-origin: center; }
+.br-dot  { fill: var(--likely); }
+
+.br-result { fill: var(--tint-amber); stroke: var(--edge-amber); stroke-width: 1; }
+.br-bang { color: var(--likely); }
+.br-verdict { font-family: var(--sans); font-size: 14.5px; font-weight: 600; fill: var(--fg-strong); }
+.br-who { font-family: var(--sans); font-size: 12.5px; fill: var(--fg-mute); }
+.br-took { font-family: var(--mono); font-size: 10.5px; fill: var(--fg-faint); }
 
 /* pipeline + gate stages */
 .n-box.stage { fill: var(--bg-soft); stroke: var(--line); }
@@ -695,7 +721,7 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .hero-grid > * { min-width: 0; }
 .split > * { min-width: 0; }
 .hero-grid {
-  display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  display: grid; grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
   gap: 3.5rem; align-items: center;
 }
 @media (max-width: 62rem) { .hero-grid > * { min-width: 0; }
@@ -710,10 +736,12 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 .hero .lede { max-width: none; margin-bottom: 2rem; }
 
 .hero-art {
-  background: var(--bg-soft);
+  background: linear-gradient(180deg, #fff 0%, #fcfcfb 100%);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 1.25rem 1.25rem 1rem;
+  padding: var(--s5);
+  box-shadow: 0 1px 2px rgba(16, 23, 32, .04),
+              0 18px 44px -26px rgba(16, 23, 32, .28);
 }
 .hero-art .dia { margin: 0; }
 .hero-art .dia figcaption { margin-top: 0.85rem; }
@@ -974,43 +1002,72 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
     to   { stroke-dasharray: 1; stroke-dashoffset: 0; }
   }
 
-  /* ---- blast radius: the story, in four beats ---- */
+  /* ---- hero: the failure, and how far it reaches ----
+     Six beats. The estate settles, the edges draw, one vendor fails, the
+     impact travels back along the affected edges to the services that depend
+     on it, those services light up, and the verdict lands. The travel is the
+     one beat that is an argument rather than an entrance: blast radius
+     propagates *from* the thing that broke *to* its dependents, and a still
+     frame cannot show a direction. */
 
-  .dia.in-view .br-p1 { animation: rg-rise .5s cubic-bezier(.22,.7,.3,1) backwards; }
-  .dia.in-view .br-cold, .dia.in-view .br-hot {
-    animation: rg-draw .6s cubic-bezier(.4,0,.25,1) backwards; animation-delay: .15s;
+  .dia.in-view .br-p1 {
+    animation: rg-rise .46s cubic-bezier(.22,.7,.3,1) backwards;
+    animation-delay: calc(var(--i, 0) * 55ms);
   }
-  /* Beat three: the two affected paths go from an ordinary grey edge to the
-     highlight. Animating *into* the resting state means the diagram is still
-     correct if this never plays. */
+  .dia.in-view .br-cold { animation: rg-draw .62s cubic-bezier(.4,0,.25,1) .28s backwards; }
+
+  /* Beats three and five animate *into* the resting appearance, so the diagram
+     is still correct and still answers its own question if this never runs. */
   .dia.in-view .br-hot {
-    animation: rg-draw .6s cubic-bezier(.4,0,.25,1) backwards,
-               br-ignite .5s ease-out 1.05s backwards;
+    animation: rg-draw .62s cubic-bezier(.4,0,.25,1) .28s backwards,
+               br-ignite .45s ease-out 1.15s backwards;
   }
   @keyframes br-ignite {
-    from { stroke: var(--line); stroke-width: 1.2; }
-    to   { stroke: var(--likely); stroke-width: 1.8; }
+    from { stroke: var(--line); stroke-width: 1.3; }
+    to   { stroke: var(--likely); stroke-width: 2.1; }
   }
-  .dia.in-view .br-hit rect { animation: br-mark .5s ease-out 1.15s backwards; }
-  .dia.in-view .br-down rect { animation: br-mark .5s ease-out .95s backwards; }
+  .dia.in-view .br-down .br-box { animation: br-mark .45s ease-out 1s backwards; }
+  .dia.in-view .br-down .g-icon { animation: br-icon .45s ease-out 1s backwards; }
+  .dia.in-view .br-hit .br-box  { animation: br-mark .45s ease-out 2.25s backwards; }
+  .dia.in-view .br-hit .g-icon  { animation: br-icon .45s ease-out 2.25s backwards; }
+  .dia.in-view .br-hit .br-status { animation: br-status .45s ease-out 2.25s backwards; }
   @keyframes br-mark {
     from { stroke: var(--line); stroke-width: 1; fill: var(--bg); }
-    to   { stroke: var(--likely); stroke-width: 1.8; fill: #fffaf0; }
+    to   { stroke: var(--likely); stroke-width: 1.6; fill: #fffcf5; }
   }
-  .dia.in-view .br-alarm { animation: rg-rise .45s ease-out 1s backwards; }
-  .dia.in-view .br-answer { animation: br-land .55s cubic-bezier(.22,.7,.3,1) 1.5s backwards; }
+  @keyframes br-icon   { from { color: var(--fg-faint); } }
+  @keyframes br-status { from { fill: var(--confirmed); } }
+
+  .dia.in-view .br-alarm  { animation: rg-rise .4s ease-out .95s backwards; }
+  .dia.in-view .br-answer { animation: br-land .5s cubic-bezier(.22,.7,.3,1) 2.6s backwards; }
   @keyframes br-land {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: none; }
   }
 
-  /* The one loop on the site. A degraded marker that stopped pulsing would
-     read as recovered, which is the opposite of what the diagram says. */
-  .pulse-ring { animation: br-pulse 2.6s ease-out infinite; }
+  /* Two loops, both slow, both on the hero alone. A degraded marker that
+     stopped pulsing would read as recovered; the impact pulse repeating says
+     the outage is ongoing, rather than replaying the whole introduction. */
+  .dia.in-view .br-ring { animation: br-pulse 2.8s ease-out 1.1s infinite; }
   @keyframes br-pulse {
-    0%   { transform: scale(.4); opacity: .5; }
-    70%  { transform: scale(1);  opacity: 0; }
-    100% { transform: scale(1);  opacity: 0; }
+    0%   { transform: scale(.36); opacity: .45; }
+    72%  { transform: scale(1);   opacity: 0; }
+    100% { transform: scale(1);   opacity: 0; }
+  }
+
+  /* pathLength is 1, so both the dash and the offset are fractions of the
+     curve. Travel occupies the first quarter of a 4.4s cycle; the rest is the
+     pause that keeps it from reading as a flicker. */
+  .dia.in-view .br-impact {
+    stroke-dasharray: 0.13 1;
+    animation: br-travel 4.4s linear 1.45s infinite;
+  }
+  @keyframes br-travel {
+    0%   { stroke-dashoffset: -1;   opacity: 0; }
+    3%   { opacity: .95; }
+    21%  { opacity: .95; }
+    25%  { stroke-dashoffset: .15;  opacity: 0; }
+    100% { stroke-dashoffset: .15;  opacity: 0; }
   }
 
   /* ---- every other figure: one quiet rise, no stagger ----
@@ -1024,7 +1081,9 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 
 /* transform on an SVG child needs a box to resolve against, and the default
    (view-box) makes scale() pivot on the canvas corner rather than the shape. */
-.pulse-ring { transform-box: fill-box; transform-origin: center; fill: var(--likely); opacity: 0; }
+/* scale() on an SVG child needs a box to resolve against; the default
+   (view-box) pivots on the canvas corner rather than the shape. */
+.br-ring { transform-box: fill-box; transform-origin: center; }
 
 /* ---- hover: trace one row back to its edge ----
    Not motion for its own sake. With seven curves leaving one point, following

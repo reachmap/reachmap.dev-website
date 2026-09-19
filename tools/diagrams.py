@@ -76,60 +76,112 @@ def _edge(x1, y1, x2, y2, cls="e-line"):
 # Landing: the advantage
 # ---------------------------------------------------------------------------
 
+# 14px stroke glyphs, so a node says what kind of thing it is before the label
+# is read. Drawn rather than pulled from an icon set: six shapes is less code
+# than a dependency, and they inherit currentColor like everything else here.
+GLYPHS = {
+    # A workload: a container with something running in it. The first cut was a
+    # box with a single bar through it, which at 14px read as a minus sign.
+    "service": '<rect x="2.3" y="2.3" width="11.4" height="11.4" rx="2.6"/>'
+               '<circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/>',
+    "api":     '<circle cx="8" cy="8" r="5.6"/><path d="M2.6 8h10.8"/>'
+               '<path d="M8 2.4c1.7 1.9 1.7 9.3 0 11.2"/><path d="M8 2.4c-1.7 1.9-1.7 9.3 0 11.2"/>',
+    "db":      '<ellipse cx="8" cy="4.3" rx="5.3" ry="2"/>'
+               '<path d="M2.7 4.3v7.4c0 1.1 2.4 2 5.3 2s5.3-.9 5.3-2V4.3"/>'
+               '<path d="M2.7 8c0 1.1 2.4 2 5.3 2s5.3-.9 5.3-2"/>',
+    "bucket":  '<path d="M2.6 4.2h10.8l-1.2 9.2H3.8L2.6 4.2Z"/><path d="M2.6 4.2h10.8"/>'
+               '<path d="M6 7.2v3.4M10 7.2v3.4"/>',
+}
+
+
+def _glyph(kind, x, y, cls=""):
+    return (f'<g transform="translate({x} {y})" class="g-icon {cls}" '
+            f'fill="none" stroke="currentColor" stroke-width="1.3" '
+            f'stroke-linecap="round" stroke-linejoin="round">{GLYPHS[kind]}</g>')
+
+
 def blast_radius():
     """One vendor degrades. Which services are in it?
 
-    This is the diagram that has to earn the page, because "why map
-    dependencies" is answered by a question you cannot currently answer, not by
-    a feature list. The highlight *is* the answer.
+    This is the diagram that has to earn the page: "why map dependencies" is
+    answered by a question you cannot currently answer today, not by a feature
+    list. The highlight *is* the answer.
 
-    Sized for the hero's art column (~480px), not for the full page width. The
-    first version was 880 wide with four services and four dependencies, and it
-    clipped its right-hand column inside the panel — a diagram whose punchline
-    is cut off is worse than no diagram. Three and three makes the same point:
-    two services are in it, one is not."""
-    svc = [("checkout", 40, True), ("orders", 92, True), ("search", 144, False)]
-    # Deliberately not colour-coded by kind: the only thing that should catch
-    # the eye here is what broke and who is in it. Kind colours come later, in
-    # the reach graph, where they carry the legend.
-    dep = [("Stripe", 34, True), ("rds orders-prod", 96, False), ("s3 uploads", 158, False)]
+    The first cut was six plain boxes and a line of caption text, which made
+    the most important drawing on the site also the weakest — the reach graph
+    halfway down was carrying four columns of real data while the hero had
+    names and nothing else. Nodes now say what kind of thing they are before
+    the label is read, services carry a status, and the answer is a result
+    rather than a sentence.
+    """
+    SVC_X, SVC_W, DEP_X, DEP_W, H = 0, 186, 318, 250, 44
+    svc = [("checkout", 34, True), ("orders", 90, True), ("search", 146, False)]
+    dep = [("Stripe", "payments API", "api", 34, True),
+           ("rds orders-prod", "managed database", "db", 90, False),
+           ("s3 uploads", "object storage", "bucket", 146, False)]
     links = [(0, 0), (0, 1), (1, 0), (1, 2), (2, 2)]
 
-    # Emitted in the order the story is told, each phase tagged so the
-    # stylesheet can time it: the estate exists, then one vendor degrades, then
-    # the affected paths light up, then the answer lands.
     b = ['<g class="br">']
+
+    # Edges first so the nodes sit over them. Each affected edge gets a second
+    # overlay path carrying the travelling impact dash.
     for si, di in links:
-        hot = svc[si][2] and dep[di][2]
-        b.append(_edge(150, svc[si][1] + 16, 270, dep[di][1] + 16,
-                       "e-line e-hot br-hot" if hot else "e-line br-cold"))
+        hot = svc[si][2] and dep[di][4]
+        y1, y2 = svc[si][1] + H / 2, dep[di][3] + H / 2
+        b.append(_edge(SVC_W, y1, DEP_X, y2, "br-edge br-hot" if hot else "br-edge br-cold"))
+        if hot:
+            b.append(_edge(SVC_W, y1, DEP_X, y2, "br-impact"))
 
-    b.append('<text x="0" y="20" class="d-cap br-p1">YOUR SERVICES</text>')
+    b.append(f'<text x="{SVC_X}" y="16" class="br-cap br-p1">YOUR SERVICES</text>')
     for name, y, hot in svc:
-        b.append(f'<g class="br-p1 {"br-hit" if hot else ""}">'
-                 + _box(0, y, 150, 32, name, "hit" if hot else "") + '</g>')
+        cls = "br-hit" if hot else ""
+        b.append(f'<g class="br-node br-p1 {cls}">')
+        b.append(f'<rect x="{SVC_X}" y="{y}" width="{SVC_W}" height="{H}" rx="8" class="br-box"/>')
+        b.append(_glyph("service", SVC_X + 15, y + 15))
+        b.append(f'<text x="{SVC_X + 42}" y="{y + 27}" class="br-name">{html.escape(name)}</text>')
+        b.append(f'<circle cx="{SVC_X + SVC_W - 18}" cy="{y + 22}" r="3.4" class="br-status"/>')
+        b.append('</g>')
 
-    b.append('<text x="270" y="20" class="d-cap br-p1">WHAT THEY REACH</text>')
-    for name, y, down in dep:
-        b.append(f'<g class="br-p1 {"br-down" if down else ""}">'
-                 + _box(270, y, 190, 32, name, "down" if down else "") + '</g>')
-    b.append('<g class="br-alarm"><circle cx="446" cy="50" r="10" class="pulse-ring"/>'
-             '<circle cx="446" cy="50" r="4" class="pulse"/>'
-             '<text x="470" y="44" class="d-note">degraded</text></g>')
+    b.append(f'<text x="{DEP_X}" y="16" class="br-cap br-p1">WHAT THEY REACH</text>')
+    for name, kind, glyph, y, down in dep:
+        cls = "br-down" if down else ""
+        b.append(f'<g class="br-node br-p1 {cls}">')
+        b.append(f'<rect x="{DEP_X}" y="{y}" width="{DEP_W}" height="{H}" rx="8" class="br-box"/>')
+        b.append(_glyph(glyph, DEP_X + 15, y + 15))
+        b.append(f'<text x="{DEP_X + 42}" y="{y + 20}" class="br-name">{html.escape(name)}</text>')
+        b.append(f'<text x="{DEP_X + 42}" y="{y + 34}" class="br-kind">{html.escape(kind)}</text>')
+        b.append('</g>')
 
-    b.append('<line x1="0" y1="214" x2="560" y2="214" class="d-rule br-answer"/>')
-    b.append('<text x="0" y="240" class="d-ask br-answer">Stripe is degraded. Who is in it?</text>')
-    b.append('<text x="0" y="264" class="d-ans br-answer">checkout and orders. Not search.</text>')
+    # The failure marker, on the vendor that went down.
+    b.append(f'<g class="br-alarm">'
+             f'<circle cx="{DEP_X + DEP_W - 20}" cy="56" r="13" class="br-ring"/>'
+             f'<circle cx="{DEP_X + DEP_W - 20}" cy="56" r="4.4" class="br-dot"/></g>')
+
+    # The answer, as a result rather than a caption.
+    b.append('<g class="br-answer">')
+    b.append('<rect x="0" y="216" width="568" height="52" rx="10" class="br-result"/>')
+    b.append('<g transform="translate(20 230)" class="br-bang" fill="none" stroke="currentColor" '
+             'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+             '<path d="M10 2 19 17H1L10 2Z"/><path d="M10 7.5v4"/>'
+             '<circle cx="10" cy="14.4" r=".9" fill="currentColor" stroke="none"/></g>')
+    b.append('<text x="56" y="238" class="br-verdict">2 of 3 services are in this outage</text>')
+    b.append('<text x="56" y="256" class="br-who">checkout, orders '
+             '&mdash; and search is unaffected</text>')
+    b.append('<text x="548" y="248" class="br-took" text-anchor="end">answered from the manifests</text>')
+    b.append('</g>')
+
     b.append('</g>')
 
     return figure(
-        _svg(560, 276,
+        _svg(568, 276,
              "Blast radius of one degraded dependency",
-             "Three services on the left connect to three shared dependencies on the right. "
-             "Stripe is marked degraded; the edges from checkout and orders to Stripe are "
-             "highlighted, showing those two services are affected and search is not.",
+             "Three services on the left — checkout, orders and search — connect to three "
+             "shared dependencies on the right: the Stripe payments API, a managed database "
+             "and object storage. Stripe is marked as degraded, and the edges from checkout "
+             "and orders to it are highlighted, showing those two services are in the outage "
+             "and search is not.",
              "".join(b)),
-        min_width=460, cls="dia-seq")
+        min_width=480, cls="dia-seq")
 
 
 def payoff_icon(name):
