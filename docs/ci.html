@@ -43,9 +43,11 @@
 </nav><article class="docs-body">
 <h1>Gating a pull request</h1>
 <p class="page-lede">Diff two graphs, fail on what got added, and evaluate policy as data.</p>
-
+<nav class="toc"><span class="toc-cap">On this page</span><ul><li><a href="#diff-two-graphs">Diff two graphs</a></li><li><a href="#the-github-action">The GitHub Action</a></li><li><a href="#policy-as-data">Policy as data</a></li><li><a href="#exporting-to-other-tools">Exporting to other tools</a></li></ul></nav>
 <p>Scanning tells you what you have. Diffing tells you what a change is about to add, which
 is the thing you can still do something about.</p>
+
+<figure class="dia "><div class="dia-scroll"><div class="dia-inner" style="min-width:640px"><svg class="dia-svg" viewBox="0 0 700 306" role="img" aria-labelledby="t536888fd d2839241e" preserveAspectRatio="xMidYMid meet"><title id="t536888fd">How the pull-request gate runs</title><desc id="d2839241e">The graph on main and the graph on the branch feed a diff, matched on from, to and relation. Gates evaluate added edges only, producing three outcomes: a comment on the pull request, SARIF for the security tab, and exit code 3 when a gate trips.</desc><g><defs><marker id="rm-arrow2" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0.5 1 L6.5 4 L0.5 7 Z" class="e-head"/></marker></defs><rect x="70" y="14" width="250" height="42" rx="5" class="n-box stage"/><text x="195.0" y="32.0" class="n-label stage">graph on main</text><text x="195.0" y="46.0" class="n-sub">the base</text><rect x="380" y="14" width="250" height="42" rx="5" class="n-box stage"/><text x="505.0" y="32.0" class="n-label stage">graph on the branch</text><text x="505.0" y="46.0" class="n-sub">the head</text><path d="M195 58 C195 78, 350 70, 350 92" class="e-line e-arrow" marker-end="url(#rm-arrow2)"/><path d="M505 58 C505 78, 350 70, 350 92" class="e-line e-arrow" marker-end="url(#rm-arrow2)"/><rect x="225" y="96" width="250" height="42" rx="5" class="n-box stage"/><text x="350.0" y="114.0" class="n-label stage">diff</text><text x="350.0" y="128.0" class="n-sub">matched on (from, to, relation)</text><path d="M350 140 V174" class="e-line e-arrow" marker-end="url(#rm-arrow2)"/><rect x="225" y="178" width="250" height="42" rx="5" class="n-box stage"/><text x="350.0" y="196.0" class="n-label stage">gates</text><text x="350.0" y="210.0" class="n-sub">added edges only</text><path d="M350 222 C350 244, 115 236, 115 258" class="e-line e-arrow" marker-end="url(#rm-arrow2)"/><rect x="10" y="262" width="210" height="34" rx="5" class="n-box ok"/><text x="115.0" y="283.0" class="n-label ok">comment on the PR</text><path d="M350 222 C350 244, 350 236, 350 258" class="e-line e-arrow" marker-end="url(#rm-arrow2)"/><rect x="245" y="262" width="210" height="34" rx="5" class="n-box ok"/><text x="350.0" y="283.0" class="n-label ok">SARIF to security tab</text><path d="M350 222 C350 244, 585 236, 585 258" class="e-line e-arrow" marker-end="url(#rm-arrow2)"/><rect x="480" y="262" width="210" height="34" rx="5" class="n-box down"/><text x="585.0" y="283.0" class="n-label down">exit 3 — build fails</text></g></svg></div></div></figure>
 
 <h2 id="diff-two-graphs">Diff two graphs<a class="anchor" href="#diff-two-graphs" aria-label="Permalink">#</a></h2>
 <div class="term">
@@ -92,6 +94,34 @@ dependencies.</p>
 
 <p>A good first gate is <code>new-external,new-unclassified</code>: it catches the two changes
 a reviewer most wants to be told about and almost never fires on routine work.</p>
+
+<h3 id="what-the-comment-looks-like">What the comment looks like<a class="anchor" href="#what-the-comment-looks-like" aria-label="Permalink">#</a></h3>
+
+<div class="pr-mock" aria-label="Illustration of the pull-request comment Reachmap leaves">
+  <div class="pr-head">
+    <span class="pr-avatar" aria-hidden="true">R</span>
+    <span class="pr-who">reachmap</span>
+    <span class="pr-when">commented on your pull request</span>
+  </div>
+  <div class="pr-body">
+    <p class="pr-title">Reachmap</p>
+    <div class="pr-warn">
+      <strong>This change trips a dependency gate on 1 new dependency.</strong>
+      <div><code>shop/orders</code> &rarr; <strong>api.riskscore.io</strong> &mdash; new external API dependency</div>
+    </div>
+    <p class="pr-sub"><strong>1 new dependency</strong></p>
+    <div class="table-scroll"><table>
+  <thead><tr><th>Workload</th><th>Now reaches</th><th>What it is</th><th>Confidence</th><th>Declared at</th></tr></thead>
+  <tbody><tr>
+    <td><code>shop/orders</code></td>
+    <td><strong>api.riskscore.io</strong></td>
+    <td>external API &middot; <strong>unclassified</strong></td>
+    <td>possible</td>
+    <td><code>orders.yaml:37</code></td>
+  </tr></tbody>
+</table></div>
+  </div>
+</div>
 
 <h3 id="formats">Formats<a class="anchor" href="#formats" aria-label="Permalink">#</a></h3>
 <p><code>-format markdown</code> is shaped as a pull-request comment.

@@ -43,7 +43,7 @@
 </nav><article class="docs-body">
 <h1>Cluster mode</h1>
 <p class="page-lede">Reading a live cluster through kubectl &mdash; and why it never reads Secrets.</p>
-
+<nav class="toc"><span class="toc-cap">On this page</span><ul><li><a href="#it-never-reads-secrets">It never reads Secrets</a></li><li><a href="#why-kubectl-and-not-client-go">Why kubectl and not client-go</a></li><li><a href="#what-it-reads">What it reads</a></li><li><a href="#partial-visibility-is-the-normal-case">Partial visibility is the normal case</a></li><li><a href="#evidence-from-a-cluster-has-no-line-numbers">Evidence from a cluster has no line numbers</a></li><li><a href="#l1-is-a-stronger-claim-than-l0">L1 is a stronger claim than L0</a></li><li><a href="#flags">Flags</a></li></ul></nav>
 <p>Cluster mode reads live objects instead of a directory. Everything else &mdash; the
 detectors, the catalog, the output formats &mdash; is identical.</p>
 
@@ -58,6 +58,9 @@ detectors, the catalog, the output formats &mdash; is identical.</p>
 </div>
 
 <h2 id="it-never-reads-secrets">It never reads Secrets<a class="anchor" href="#it-never-reads-secrets" aria-label="Permalink">#</a></h2>
+
+<figure class="dia "><div class="dia-scroll"><div class="dia-inner" style="min-width:640px"><svg class="dia-svg" viewBox="0 0 700 312" role="img" aria-labelledby="t1e6871c2 df9316a45" preserveAspectRatio="xMidYMid meet"><title id="t1e6871c2">What cluster mode reads, and what it never requests</title><desc id="df9316a45">Above the line, the object kinds Reachmap lists from a cluster: workloads, services, config, service accounts, storage, mesh and egress policy, KEDA objects, and the External Secrets objects that describe Secrets. Below, crossed out: Secret objects themselves, which are never listed, read or cached.</desc><g><rect x="0" y="16" width="700" height="140" rx="7" class="zone"/><text x="18" y="38" class="d-cap">REACHMAP READS</text><rect x="18" y="48" width="326" height="28" rx="4" class="n-box read"/><text x="181.0" y="66.0" class="n-label read">Deployments, Services, ConfigMaps</text><rect x="356" y="48" width="326" height="28" rx="4" class="n-box read"/><text x="519.0" y="66.0" class="n-label read">ServiceAccounts, PVCs, StorageClasses</text><rect x="18" y="82" width="326" height="28" rx="4" class="n-box read"/><text x="181.0" y="100.0" class="n-label read">Istio, Gateway API, Cilium policy</text><rect x="356" y="82" width="326" height="28" rx="4" class="n-box read"/><text x="519.0" y="100.0" class="n-label read">KEDA ScaledObjects</text><rect x="18" y="116" width="664" height="28" rx="4" class="n-box read"/><text x="350.0" y="134.0" class="n-label read">ExternalSecret, SecretStore, SecretProviderClass</text><path d="M350 158 V186" class="e-line e-cut"/><path d="M340 164 L360 180 M360 164 L340 180" class="e-cross"/><rect x="0" y="190" width="700" height="112" rx="7" class="zone zone-off"/><text x="18" y="212" class="d-cap">NEVER REQUESTED</text><rect x="18" y="222" width="300" height="44" rx="5" class="n-box never"/><text x="168.0" y="241.0" class="n-label never">Secret</text><text x="168.0" y="255.0" class="n-sub">not listed, not read, not cached</text><text x="342" y="238" class="z-note">A dependency mapper that pulls plaintext</text><text x="342" y="256" class="z-note">credentials out of a production cluster is</text><text x="342" y="274" class="z-note">a different and far more dangerous tool.</text><text x="342" y="294" class="z-note z-test">A test enforces this.</text></g></svg></div></div></figure>
+
 <div class="note">
 This is a product invariant, not a default. Reachmap records that a secret-borne dependency
 exists and resolves it through the objects that <em>describe</em> the Secret &mdash; a cloud

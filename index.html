@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Reachmap — map what your Kubernetes workloads reach</title>
-  <meta name="description" content="A dependency mapper for distributed systems. Reads rendered Kubernetes manifests or a live cluster and catalogs every cloud service, internal service and third-party API a workload reaches — with the file and line behind every claim.">
-  <meta property="og:title" content="Reachmap — map what your Kubernetes workloads reach">
-  <meta property="og:description" content="A dependency mapper for distributed systems. Reads rendered Kubernetes manifests or a live cluster and catalogs every cloud service, internal service and third-party API a workload reaches — with the file and line behind every claim.">
+  <title>Reachmap — know what your workloads depend on</title>
+  <meta name="description" content="A dependency mapper for Kubernetes. Catalogs every cloud service, internal service and third-party API your workloads reach, so you can answer what breaks when something else does — with the file and line behind every claim.">
+  <meta property="og:title" content="Reachmap — know what your workloads depend on">
+  <meta property="og:description" content="A dependency mapper for Kubernetes. Catalogs every cloud service, internal service and third-party API your workloads reach, so you can answer what breaks when something else does — with the file and line behind every claim.">
   <meta property="og:type" content="website">
   <meta name="go-import" content="reachmap.dev git https://github.com/reachmap/reachmap.dev">
   <meta name="go-source" content="reachmap.dev https://github.com/reachmap/reachmap.dev https://github.com/reachmap/reachmap.dev/tree/main{/dir} https://github.com/reachmap/reachmap.dev/blob/main{/dir}/{file}#L{line}">
@@ -31,19 +31,48 @@
 
 <section class="hero">
   <div class="wrap">
-    <h1>Map what your workloads<br><span class="dim">actually reach.</span></h1>
+    <h1>Know what your workloads<br><span class="dim">depend on.</span></h1>
     <p class="lede">
-      Reachmap reads rendered Kubernetes manifests &mdash; or a live cluster &mdash; and
-      catalogs every <strong>cloud service</strong>, <strong>internal service</strong> and
-      <strong>third-party API</strong> a workload depends on. Every edge carries the file,
-      the line and the field it came from, because the first question anyone asks about a
-      surprising dependency is <em>says who?</em>
+      Every service quietly accumulates dependencies &mdash; a queue, a managed database,
+      four vendor APIs, a cloud role. Nobody wrote them down, and the list only matters
+      on the day one of them breaks. <strong>Reachmap writes it down for you</strong>, from
+      the manifests you already have.
     </p>
     <div class="cta-row">
       <a class="btn btn-primary" href="docs/quickstart.html">Quickstart &rarr;</a>
-      <a class="btn" href="docs/detectors.html">What it detects</a>
+      <a class="btn" href="#what-you-get">See what it produces</a>
       <a class="btn" href="https://github.com/reachmap/reachmap.dev">Source</a>
     </div>
+
+    <figure class="dia "><div class="dia-scroll"><div class="dia-inner" style="min-width:790px"><svg class="dia-svg" viewBox="0 0 880 360" role="img" aria-labelledby="t69ee3e4d d2bf0928f" preserveAspectRatio="xMidYMid meet"><title id="t69ee3e4d">Blast radius of one degraded dependency</title><desc id="d2bf0928f">Four services on the left connect to four shared dependencies on the right. Stripe is marked degraded; the edges from checkout and orders to Stripe are highlighted, showing those two services are affected and search and ingestor are not.</desc><g><path d="M232 57 C322.0 57, 322.0 51, 412 51" class="e-line e-hot"/><path d="M232 57 C322.0 57, 322.0 115, 412 115" class="e-line"/><path d="M232 121 C322.0 121, 322.0 51, 412 51" class="e-line e-hot"/><path d="M232 121 C322.0 121, 322.0 115, 412 115" class="e-line"/><path d="M232 121 C322.0 121, 322.0 179, 412 179" class="e-line"/><path d="M232 185 C322.0 185, 322.0 179, 412 179" class="e-line"/><path d="M232 249 C322.0 249, 322.0 243, 412 243" class="e-line"/><path d="M232 249 C322.0 249, 322.0 179, 412 179" class="e-line"/><text x="24" y="22" class="d-cap">YOUR SERVICES</text><rect x="24" y="40" width="208" height="34" rx="5" class="n-box hit"/><text x="128.0" y="61.0" class="n-label hit">checkout</text><rect x="24" y="104" width="208" height="34" rx="5" class="n-box hit"/><text x="128.0" y="125.0" class="n-label hit">orders</text><rect x="24" y="168" width="208" height="34" rx="5" class="n-box "/><text x="128.0" y="189.0" class="n-label ">search</text><rect x="24" y="232" width="208" height="34" rx="5" class="n-box "/><text x="128.0" y="253.0" class="n-label ">ingestor</text><text x="412" y="22" class="d-cap">WHAT THEY REACH</text><rect x="412" y="34" width="208" height="34" rx="5" class="n-box  down"/><text x="516.0" y="55.0" class="n-label  down">Stripe</text><rect x="412" y="98" width="208" height="34" rx="5" class="n-box "/><text x="516.0" y="119.0" class="n-label ">rds orders-prod</text><rect x="412" y="162" width="208" height="34" rx="5" class="n-box "/><text x="516.0" y="183.0" class="n-label ">s3 uploads</text><rect x="412" y="226" width="208" height="34" rx="5" class="n-box "/><text x="516.0" y="247.0" class="n-label ">msk events</text><circle cx="600" cy="51" r="4" class="pulse"/><text x="632" y="45" class="d-note">degraded</text><line x1="24" y1="296" x2="856" y2="296" class="d-rule"/><text x="24" y="322" class="d-ask">Stripe is degraded. Which services are in it?</text><text x="24" y="344" class="d-ans">checkout and orders &mdash; and nothing else. Two seconds, not a war room.</text></g></svg></div></div></figure>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Why map dependencies</div>
+    <h2>Four questions that are hard today</h2>
+    <p class="sec-intro">
+      None of these need a new tool to <em>ask</em>. They need an answer you can trust
+      without a week of archaeology, and an answer that is still true next month.
+    </p>
+    <div class="payoffs"><div class="payoff"><svg class="p-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 18.5 17H1.5L10 3.5Z"/><path d="M10 8.5v3.5"/><circle cx="10" cy="14.6" r=".9" class="i-dot"/></svg>
+        <h3>When something breaks, know who is in it</h3><p>A vendor degrades or a region wobbles. Today that starts with a war room and a lot of grep. With a map it starts with a list of exactly which services touch the thing that broke.</p><span class="p-q">&ldquo;Which services call Stripe?&rdquo;</span></div><div class="payoff"><svg class="p-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="4.5" r="2"/><circle cx="5.5" cy="15.5" r="2"/><circle cx="14.5" cy="4.5" r="2"/><path d="M5.5 6.5v7"/><path d="M14.5 6.5c0 4-9 2.5-9 7"/></svg>
+        <h3>Catch the dependency nobody reviewed</h3><p>New third-party APIs arrive one pull request at a time, each too small to argue about. Nobody decides to depend on eleven vendors; it just happens. A diff on every PR makes each one a decision.</p><span class="p-q">&ldquo;What did this branch just add?&rdquo;</span></div><div class="payoff"><svg class="p-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 16.5 5v5.2c0 3.6-2.6 6.2-6.5 7.3-3.9-1.1-6.5-3.7-6.5-7.3V5L10 2.5Z"/><path d="M7.2 10.1 9.3 12.2l3.6-3.8"/></svg>
+        <h3>Answer the audit question in minutes</h3><p>What leaves the cluster, which workloads are in PCI scope, and which cloud roles does each service assume. These questions get asked once a year and cost a week each time.</p><span class="p-q">&ldquo;What is in scope, and says who?&rdquo;</span></div><div class="payoff"><svg class="p-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6.5h11"/><path d="M10.5 3.5 13.8 6.5 10.5 9.5"/><path d="M17.5 13.5h-11"/><path d="M9.5 10.5 6.2 13.5 9.5 16.5"/></svg>
+        <h3>See what a move would actually cost</h3><p>Changing region, account or provider is priced by what is pinned to the old one. A PVC tied to one availability zone and a hardcoded regional endpoint are the same surprise, six months apart.</p><span class="p-q">&ldquo;What is pinned to us-east-1?&rdquo;</span></div></div>
+  </div>
+</section>
+
+<section id="what-you-get">
+  <div class="wrap">
+    <div class="sec-label">What you get</div>
+    <h2>A graph, and the evidence behind every edge</h2>
+    <p class="sec-intro">
+      One command over a directory of YAML. Each dependency carries the file, the line and
+      the field it came from &mdash; because the first question anyone asks about a
+      surprising edge is <em>says who?</em>
+    </p>
 
     <div class="term">
   <div class="term-bar">
@@ -76,22 +105,23 @@
 <span class="t-meta">9 classified targets, 1 unclassified, 1 secret-borne, 0 suppressed</span></code></pre>
 </div>
 
-    <p class="sec-intro" style="margin-bottom:0">
-      No agent, no cluster, no credentials. That scan is a directory of YAML and a
-      single static binary.
+    <figure class="dia "><div class="dia-scroll"><div class="dia-inner" style="min-width:660px"><svg class="dia-svg" viewBox="0 0 720 350" role="img" aria-labelledby="tb25acefd d24c980c4" preserveAspectRatio="xMidYMid meet"><title id="tb25acefd">The reach graph a scan produces</title><desc id="d24c980c4">The workload platform/ingestor on the left, connected to seven targets on the right: three cloud resources, two third-party APIs, one cloud identity, and one unresolved secret reference. Each target is coloured by kind.</desc><g><path d="M264 176 C328.0 176, 328.0 31, 392 31" class="e-line e-cloud"/><path d="M264 176 C328.0 176, 328.0 79, 392 79" class="e-line e-cloud"/><path d="M264 176 C328.0 176, 328.0 127, 392 127" class="e-line e-cloud"/><path d="M264 176 C328.0 176, 328.0 175, 392 175" class="e-line e-ext"/><path d="M264 176 C328.0 176, 328.0 223, 392 223" class="e-line e-ext"/><path d="M264 176 C328.0 176, 328.0 271, 392 271" class="e-line e-ident"/><path d="M264 176 C328.0 176, 328.0 319, 392 319" class="e-line e-opaque"/><rect x="24" y="158" width="240" height="36" rx="5" class="n-box workload"/><text x="144.0" y="180.0" class="n-label workload">platform/ingestor</text><text x="24" y="146" class="d-cap">WORKLOAD</text><text x="392" y="10" class="d-cap">WHAT IT REACHES</text><rect x="392" y="14" width="300" height="36" rx="5" class="n-box cloud"/><text x="542.0" y="29.0" class="n-label cloud">aws rds ingestor-db</text><text x="542.0" y="43.0" class="n-sub">database</text><rect x="392" y="62" width="300" height="36" rx="5" class="n-box cloud"/><text x="542.0" y="77.0" class="n-label cloud">aws sqs events-inbound</text><text x="542.0" y="91.0" class="n-sub">queue</text><rect x="392" y="110" width="300" height="36" rx="5" class="n-box cloud"/><text x="542.0" y="125.0" class="n-label cloud">gcp sql analytics-primary</text><text x="542.0" y="139.0" class="n-sub">database</text><rect x="392" y="158" width="300" height="36" rx="5" class="n-box ext"/><text x="542.0" y="173.0" class="n-label ext">Stripe</text><text x="542.0" y="187.0" class="n-sub">third-party API</text><rect x="392" y="206" width="300" height="36" rx="5" class="n-box ext"/><text x="542.0" y="221.0" class="n-label ext">HashiCorp Vault</text><text x="542.0" y="235.0" class="n-sub">third-party API</text><rect x="392" y="254" width="300" height="36" rx="5" class="n-box ident"/><text x="542.0" y="269.0" class="n-label ident">iam-role platform-ingestor</text><text x="542.0" y="283.0" class="n-sub">cloud identity</text><rect x="392" y="302" width="300" height="36" rx="5" class="n-box opaque"/><text x="542.0" y="317.0" class="n-label opaque">secret ingestor-api-creds</text><text x="542.0" y="331.0" class="n-sub">target unknown</text></g></svg></div></div></figure>
+
+    <p class="sec-intro" style="margin-bottom:0.5rem">
+      The colours above are the same ones the terminal prints, and they mean this:
     </p>
+    <div class="legend"><div class="lg-row"><span class="lg-swatch lg-cloud"></span><code class="lg-tag">[cloud]</code><span class="lg-desc">A named cloud resource — an RDS instance, a queue, a bucket</span></div><div class="lg-row"><span class="lg-swatch lg-ext"></span><code class="lg-tag">[external]</code><span class="lg-desc">A third-party API outside your estate</span></div><div class="lg-row"><span class="lg-swatch lg-ident"></span><code class="lg-tag">[identity]</code><span class="lg-desc">A cloud role or service account the workload assumes</span></div><div class="lg-row"><span class="lg-swatch lg-opaque"></span><code class="lg-tag">[opaque]</code><span class="lg-desc">A dependency that exists but whose target is in a Secret</span></div><div class="lg-row"><span class="lg-swatch lg-svc"></span><code class="lg-tag">[service]</code><span class="lg-desc">Another service inside the cluster</span></div></div>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <div class="sec-label">The problem</div>
+    <div class="sec-label">Why a grep would not do</div>
     <h2>A pod spec is not the dependency list</h2>
     <p class="sec-intro">
       Most of what a service reaches is written down somewhere other than its container
-      environment &mdash; in an autoscaler, a sidecar argument, a Secret it mounts, or an
-      annotation on its ServiceAccount. Four of Reachmap's detectors exist because those
-      dependencies are otherwise invisible.
+      environment. Four of Reachmap's detectors exist because those dependencies are
+      otherwise invisible &mdash; not hard to find, <em>invisible</em>.
     </p>
     <div class="grid grid-2">
       <div class="cell">
@@ -128,30 +158,57 @@
 
 <section>
   <div class="wrap">
+    <div class="sec-label">How it works</div>
+    <h2>Read, resolve, emit</h2>
+    <p class="sec-intro">
+      No agent and no cluster required. A directory of rendered YAML is enough; a live
+      cluster is an option, not a prerequisite.
+    </p>
+    <figure class="dia "><div class="dia-scroll"><div class="dia-inner" style="min-width:810px"><svg class="dia-svg" viewBox="0 0 900 200" role="img" aria-labelledby="t179f091a dc845013e" preserveAspectRatio="xMidYMid meet"><title id="t179f091a">How a scan flows</title><desc id="dc845013e">Three stages. Reads: a manifest directory, stdin, or a live cluster. Resolves: sixteen detectors, the ARN and DSN parsers, and 142 catalog rules. Emits: text and JSON, Mermaid and DOT diagrams, SARIF and Backstage entities.</desc><defs><marker id="rm-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1 L7 4 L0 7" class="e-head"/></marker></defs><g><text x="20" y="14" class="d-cap">READS</text><rect x="20" y="30" width="240" height="46" rx="5" class="n-box stage"/><text x="140.0" y="50.0" class="n-label stage">./manifests</text><text x="140.0" y="64.0" class="n-sub">a directory of YAML</text><rect x="20" y="88" width="240" height="46" rx="5" class="n-box stage"/><text x="140.0" y="108.0" class="n-label stage">stdin</text><text x="140.0" y="122.0" class="n-sub">helm template | reachmap</text><rect x="20" y="146" width="240" height="46" rx="5" class="n-box stage"/><text x="140.0" y="166.0" class="n-label stage">@cluster</text><text x="140.0" y="180.0" class="n-sub">live objects via kubectl</text><text x="330" y="14" class="d-cap">RESOLVES</text><rect x="330" y="30" width="240" height="46" rx="5" class="n-box stage"/><text x="450.0" y="50.0" class="n-label stage">16 detectors</text><text x="450.0" y="64.0" class="n-sub">env, args, mesh, KEDA, CRs…</text><rect x="330" y="88" width="240" height="46" rx="5" class="n-box stage"/><text x="450.0" y="108.0" class="n-label stage">parsers</text><text x="450.0" y="122.0" class="n-sub">ARN, DSN, in-cluster DNS</text><rect x="330" y="146" width="240" height="46" rx="5" class="n-box stage"/><text x="450.0" y="166.0" class="n-label stage">142 catalog rules</text><text x="450.0" y="180.0" class="n-sub">hostname → named resource</text><text x="640" y="14" class="d-cap">EMITS</text><rect x="640" y="30" width="240" height="46" rx="5" class="n-box stage"/><text x="760.0" y="50.0" class="n-label stage">text · json</text><text x="760.0" y="64.0" class="n-sub">read it, or feed it forward</text><rect x="640" y="88" width="240" height="46" rx="5" class="n-box stage"/><text x="760.0" y="108.0" class="n-label stage">mermaid · dot</text><text x="760.0" y="122.0" class="n-sub">a diagram</text><rect x="640" y="146" width="240" height="46" rx="5" class="n-box stage"/><text x="760.0" y="166.0" class="n-label stage">sarif · backstage</text><text x="760.0" y="180.0" class="n-sub">what CI already reads</text><path d="M272 53 H322" class="e-line e-arrow" marker-end="url(#rm-arrow)"/><path d="M582 53 H632" class="e-line e-arrow" marker-end="url(#rm-arrow)"/><path d="M272 111 H322" class="e-line e-arrow" marker-end="url(#rm-arrow)"/><path d="M582 111 H632" class="e-line e-arrow" marker-end="url(#rm-arrow)"/><path d="M272 169 H322" class="e-line e-arrow" marker-end="url(#rm-arrow)"/><path d="M582 169 H632" class="e-line e-arrow" marker-end="url(#rm-arrow)"/></g></svg></div></div></figure>
+
+    <h2 style="margin-top:3rem; font-size:1.15rem">And it tells you how sure it is</h2>
+    <p class="sec-intro">
+      An edge you disagree with has to be arguable, so confidence is a bucket with a rule
+      behind it rather than a number. &ldquo;0.73&rdquo; is not an argument.
+    </p>
+    <figure class="dia "><div class="dia-scroll"><div class="dia-inner" style="min-width:600px"><svg class="dia-svg" viewBox="0 0 700 192" role="img" aria-labelledby="tdf0e5762 dc0396b10" preserveAspectRatio="xMidYMid meet"><title id="tdf0e5762">The three confidence buckets</title><desc id="dc0396b10">Confirmed: the manifest names the target outright. Likely: parsed from config and matched to a catalog rule. Possible: something is there but nothing names it.</desc><g><rect x="0" y="12" width="12" height="12" rx="3" class="cf-chip cf-conf"/><text x="24" y="23" class="cf-name cf-conf">confirmed</text><text x="150" y="23" class="cf-claim">The manifest names the target outright</text><text x="150" y="42" class="cf-eg">a literal ARN, an ExternalName, a proxy argument, a StorageClass provisioner</text><line x1="0" y1="56" x2="700" y2="56" class="d-rule"/><rect x="0" y="74" width="12" height="12" rx="3" class="cf-chip cf-likely"/><text x="24" y="85" class="cf-name cf-likely">likely</text><text x="150" y="85" class="cf-claim">Parsed from config and matched to a catalog rule</text><text x="150" y="104" class="cf-eg">a hostname the catalog recognises, or a shared-credential join</text><line x1="0" y1="118" x2="700" y2="118" class="d-rule"/><rect x="0" y="136" width="12" height="12" rx="3" class="cf-chip cf-poss"/><text x="24" y="147" class="cf-name cf-poss">possible</text><text x="150" y="147" class="cf-claim">Something is there, but nothing names it</text><text x="150" y="166" class="cf-eg">an endpoint no rule recognises, or a target inside a Secret</text></g></svg></div></div></figure>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
     <div class="sec-label">In CI</div>
-    <h2>Gate the pull request that adds a dependency</h2>
+    <h2>Every new dependency becomes a decision</h2>
     <p class="sec-intro">
       Scanning is useful once. Diffing is useful every day. Reachmap compares the graph on a
-      branch against the graph on main and fails the build when a change quietly introduces a
-      new third-party API, a new cloud service, or a dependency nobody has classified.
+      branch against the graph on main and comments on the pull request when a change adds
+      something &mdash; failing the build only if you ask it to.
     </p>
 
-    <div class="term">
-  <div class="term-bar">
-    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-    <span class="label">reachmap diff</span><button class="copy" type="button">copy</button>
+    <div class="pr-mock" aria-label="Illustration of the pull-request comment Reachmap leaves">
+  <div class="pr-head">
+    <span class="pr-avatar" aria-hidden="true">R</span>
+    <span class="pr-who">reachmap</span>
+    <span class="pr-when">commented on your pull request</span>
   </div>
-  <pre><code><span class="t-prompt">$</span> <span class="t-cmd">reachmap</span> <span class="t-cmd">diff</span> <span class="t-cmd">base.json</span> <span class="t-cmd">head.json</span> <span class="t-flag">-fail-on</span> <span class="t-cmd">new-external</span>
-
-<span class="t-meta">1 new dependency</span>
-<span class="t-add">  + shop/orders  -&gt;  api.riskscore.io  [https, possible, unclassified]</span>
-<span class="t-meta">      orders.yaml:37</span>
-
-<span class="t-meta">1 policy trigger fired</span>
-<span class="t-warn">  ! [new-external] shop/orders -&gt; api.riskscore.io: new external API dependency</span>
-
-<span class="t-prompt">$</span> <span class="t-cmd">echo</span> <span class="t-cmd">$?</span>
-3</code></pre>
+  <div class="pr-body">
+    <p class="pr-title">Reachmap</p>
+    <div class="pr-warn">
+      <strong>This change trips a dependency gate on 1 new dependency.</strong>
+      <div><code>shop/orders</code> &rarr; <strong>api.riskscore.io</strong> &mdash; new external API dependency</div>
+    </div>
+    <p class="pr-sub"><strong>1 new dependency</strong></p>
+    <div class="table-scroll"><table>
+  <thead><tr><th>Workload</th><th>Now reaches</th><th>What it is</th><th>Confidence</th><th>Declared at</th></tr></thead>
+  <tbody><tr>
+    <td><code>shop/orders</code></td>
+    <td><strong>api.riskscore.io</strong></td>
+    <td>external API &middot; <strong>unclassified</strong></td>
+    <td>possible</td>
+    <td><code>orders.yaml:37</code></td>
+  </tr></tbody>
+</table></div>
+  </div>
 </div>
 
     <div class="grid grid-3">
@@ -172,40 +229,7 @@
         and Backstage catalog entities for everything downstream.</p>
       </div>
     </div>
-    <p style="margin-top:1.5rem"><a href="docs/ci.html">Set up the gate &rarr;</a></p>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="sec-label">Design</div>
-    <h2>Three decisions that shape everything else</h2>
-    <div class="grid grid-3">
-      <div class="cell">
-        <h3>Every edge carries its evidence</h3>
-        <p>File, line, field, and the redacted snippet it came from. A tool that cannot answer
-        <em>says who?</em> gets abandoned the first time it surprises someone. Credentials are
-        stripped at parse time, before anything reaches the graph.</p>
-      </div>
-      <div class="cell">
-        <h3>Precision over recall</h3>
-        <p>A graph people believe beats a graph that is complete. <code>LOG_LEVEL=info</code> does
-        not become a dependency on a service called &ldquo;info&rdquo;. Bare tokens count only when
-        the key they sit under says so.</p>
-      </div>
-      <div class="cell">
-        <h3>Confidence is a bucket, not a float</h3>
-        <p><code>confirmed</code> / <code>likely</code> / <code>possible</code>. An edge a user
-        disagrees with has to be arguable, and &ldquo;0.73&rdquo; is not an argument.</p>
-      </div>
-    </div>
-
-    <div class="note">
-      <strong>Blind spots are counted, not hidden.</strong> When a connection string lives in a
-      Secret that nothing in the scan describes, Reachmap records that a dependency exists and
-      that it cannot see the target. A blind spot you can count is one you can argue about.
-      Cluster mode does not change this: it never reads Secrets either.
-    </div>
+    <p style="margin-top:1.75rem"><a href="docs/ci.html">Set up the gate &rarr;</a></p>
   </div>
 </section>
 
@@ -214,8 +238,8 @@
     <div class="sec-label">Install</div>
     <h2>One binary, one vendored dependency</h2>
     <p class="sec-intro">
-      Reachmap is Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds
-      offline, audits in an afternoon and ships as one static binary.
+      Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds offline,
+      audits in an afternoon and ships as one static binary.
     </p>
 
     <div class="term">
@@ -241,33 +265,12 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-label">Roadmap</div>
-    <h2>Where this is going</h2>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>Phase</th><th>Scope</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td><code>v0.1</code></td><td>Manifest detectors, endpoint catalog, ARN/DSN parsers, JSON + Mermaid + text</td><td>Shipped</td></tr>
-          <tr><td><code>v0.2</code></td><td><code>diff</code>, <code>policy check</code>, SARIF/DOT/Backstage exporters, GitHub Action</td><td>Shipped</td></tr>
-          <tr><td><code>v0.3</code></td><td>Mesh, KEDA, cloud resource CRs, External Secrets, workload identity, storage, registries; live cluster mode; full GCP + Azure</td><td>Shipped</td></tr>
-          <tr><td><code>v0.4</code></td><td>IAM policy expansion &mdash; resolve an identity into the resources it may reach</td><td>Next</td></tr>
-          <tr><td><code>v0.5</code></td><td>Runtime adapters (Hubble, Coroot, OTel, VPC/DNS logs); shadow and stale reports</td><td>Planned</td></tr>
-          <tr><td><code>v0.6</code></td><td>Source-code scanning: Go, Java, Python, Node</td><td>Planned</td></tr>
-          <tr><td><code>v1.0</code></td><td>Blast-radius traversal with criticality, environment diffing, <code>reachmap serve</code></td><td>Planned</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
     <div class="sec-label">Known limits</div>
     <h2>Stated plainly</h2>
     <p class="sec-intro">
       A tool that overclaims here loses trust the first time it is wrong.
     </p>
-    <ul style="color:var(--fg-mute); max-width:46rem; line-height:1.8">
+    <ul style="color:var(--fg-mute); max-width:44rem; line-height:1.8">
       <li><strong>Secrets.</strong> A connection string in a Secret is invisible unless something in
       the scan describes that Secret. Reachmap does not read Secrets, in cluster mode either.</li>
       <li><strong>Dynamically constructed endpoints.</strong>
@@ -277,6 +280,30 @@
       <li><strong>Permitted reach is not observed reach.</strong> Mesh and network-policy edges say a
       workload <em>may</em> reach something. Proving it does needs runtime data.</li>
     </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Start here</div>
+    <h2>Three steps, in order</h2>
+    <div class="next">
+      <a href="docs/quickstart.html">
+        <span class="n-step">01</span>
+        <span class="n-name">Scan a directory</span>
+        <span class="n-why">Build it and point it at rendered manifests. Ten minutes.</span>
+      </a>
+      <a href="docs/detectors.html">
+        <span class="n-step">02</span>
+        <span class="n-name">Check what it found</span>
+        <span class="n-why">Read the detector table and triage the unclassified endpoints.</span>
+      </a>
+      <a href="docs/ci.html">
+        <span class="n-step">03</span>
+        <span class="n-name">Put it on every PR</span>
+        <span class="n-why">Diff against main and comment. This is what makes it stick.</span>
+      </a>
+    </div>
   </div>
 </section>
 

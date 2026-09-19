@@ -348,3 +348,188 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
   border-radius: var(--radius); font-size: 0.88rem;
 }
 .skip:focus { left: 1rem; top: 1rem; z-index: 50; }
+
+/* ==========================================================================
+   Diagrams
+   Colour lives here, not in the SVG, so a token change moves the drawings and
+   the terminal output together. The node colours are the scan output's colours
+   on purpose: the legend teaches them once and they stay learned.
+   ========================================================================== */
+
+.dia { margin: 2.25rem 0; }
+.dia-scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+.dia-inner { max-width: 100%; }
+.dia-svg { width: 100%; height: auto; display: block; }
+.dia figcaption {
+  margin-top: 0.7rem; font-size: 0.84rem; color: var(--fg-mute);
+}
+
+/* shared primitives */
+.n-box { fill: var(--bg); stroke: var(--line); stroke-width: 1; }
+.n-label {
+  font-family: var(--mono); font-size: 12px; fill: var(--fg-strong);
+  text-anchor: middle;
+}
+.n-sub {
+  font-family: var(--sans); font-size: 11px; fill: var(--fg-faint);
+  text-anchor: middle;
+}
+.e-line { fill: none; stroke: var(--line); stroke-width: 1.2; }
+.e-head { fill: var(--fg-faint); stroke: none; }
+/* 11px, not 9.5px. A diagram scaled to fit an 800px column renders its text at
+   roughly 0.85x, and 9.5px declared became 8px on screen — small enough that
+   the captions were decorative rather than readable. */
+.d-cap {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  fill: var(--fg-faint); text-transform: uppercase;
+}
+.d-rule { stroke: var(--line); stroke-width: 1; }
+
+/* node kinds — the same five the terminal prints */
+.n-box.cloud, .e-cloud  { stroke: var(--cloud); }
+.n-box.ext,   .e-ext    { stroke: var(--external); }
+.n-box.ident, .e-ident  { stroke: var(--identity); }
+.n-box.opaque, .e-opaque{ stroke: var(--opaque); stroke-dasharray: 4 3; }
+.n-label.cloud  { fill: var(--cloud); }
+.n-label.ext    { fill: var(--external); }
+.n-label.ident  { fill: var(--identity); }
+.n-label.opaque { fill: var(--opaque); }
+.e-cloud, .e-ext, .e-ident, .e-opaque { opacity: .5; }
+
+/* blast radius */
+.n-box.hit { stroke: var(--likely); stroke-width: 1.8; fill: #fffaf0; }
+.n-box.down { stroke: var(--likely); stroke-width: 1.8; fill: #fffaf0; }
+.n-label.down { fill: var(--likely); }
+.e-hot { stroke: var(--likely); stroke-width: 1.8; opacity: 1; }
+.pulse { fill: var(--likely); }
+.d-note {
+  font-family: var(--mono); font-size: 11px; fill: var(--likely);
+}
+.d-ask { font-family: var(--sans); font-size: 14px; fill: var(--fg-mute); }
+.d-ans { font-family: var(--sans); font-size: 14px; font-weight: 600; fill: var(--fg-strong); }
+
+/* pipeline + gate stages */
+.n-box.stage { fill: var(--bg-soft); stroke: var(--line); }
+.n-box.ok { fill: var(--bg); stroke: var(--confirmed); }
+.n-label.ok { fill: var(--confirmed); }
+.n-box.wl { fill: var(--fg-strong); stroke: var(--fg-strong); }
+.n-label.wl { fill: #fff; }
+.n-box.surf { fill: var(--bg-soft); stroke: var(--line); }
+.n-box.surf-out { stroke: var(--accent); }
+.n-label.surf-out { fill: var(--accent); }
+
+/* cluster-mode boundary */
+.zone { fill: var(--bg-soft); stroke: var(--line); }
+.zone-off { fill: #fdf6f3; stroke: #e8cfc6; }
+.n-box.read { fill: var(--bg); stroke: var(--line-soft); }
+.n-box.never { fill: #fff; stroke: var(--opaque); stroke-dasharray: 4 3; }
+.n-label.never { fill: var(--opaque); }
+.z-note { font-family: var(--sans); font-size: 12px; fill: var(--fg-mute); }
+.z-test { fill: var(--fg-strong); font-weight: 600; }
+.e-cut { stroke: var(--opaque); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.e-cross { stroke: var(--opaque); stroke-width: 1.6; fill: none; }
+
+/* confidence scale */
+.cf-chip { fill: var(--line); }
+.cf-chip.cf-conf { fill: var(--confirmed); }
+.cf-chip.cf-likely { fill: var(--likely); }
+.cf-chip.cf-poss { fill: var(--possible); }
+.cf-name { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.cf-name.cf-conf { fill: var(--confirmed); }
+.cf-name.cf-likely { fill: var(--likely); }
+.cf-name.cf-poss { fill: var(--possible); }
+.cf-claim { font-family: var(--sans); font-size: 13px; fill: var(--fg-strong); }
+.cf-eg { font-family: var(--sans); font-size: 12px; fill: var(--fg-mute); }
+
+/* ---------- legend ---------- */
+
+.legend {
+  display: grid; gap: 0.55rem;
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem; border-top: 1px solid var(--line-soft);
+}
+.lg-row { display: grid; grid-template-columns: 10px 6.5rem 1fr; gap: 0.75rem; align-items: baseline; }
+.lg-swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--line); align-self: center; }
+.lg-swatch.lg-cloud  { background: var(--cloud); }
+.lg-swatch.lg-ext    { background: var(--external); }
+.lg-swatch.lg-ident  { background: var(--identity); }
+.lg-swatch.lg-opaque { background: var(--opaque); }
+.lg-swatch.lg-svc    { background: var(--fg-faint); }
+.lg-tag { font-size: 0.78rem; background: none; padding: 0; color: var(--fg-strong); }
+.lg-desc { font-size: 0.88rem; color: var(--fg-mute); }
+@media (max-width: 34rem) {
+  .lg-row { grid-template-columns: 10px 1fr; }
+  .lg-desc { grid-column: 2; }
+}
+
+/* ---------- payoff cards ---------- */
+
+.payoffs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5rem 4rem; }
+@media (max-width: 52rem) { .payoffs { grid-template-columns: 1fr; gap: 2.25rem; } }
+.payoff .p-icon {
+  width: 20px; height: 20px; color: var(--accent);
+  display: block; margin-bottom: 0.7rem;
+}
+.payoff .i-dot { fill: currentColor; stroke: none; }
+.payoff h3 { font-size: 0.98rem; margin-bottom: 0.4rem; letter-spacing: -0.014em; }
+.payoff p { color: var(--fg-mute); font-size: 0.93rem; margin: 0; }
+.payoff .p-q {
+  display: block; margin-top: 0.6rem; font-size: 0.87rem;
+  color: var(--fg-faint); font-style: italic;
+}
+
+/* ---------- pull-request comment illustration ---------- */
+
+.pr-mock {
+  border: 1px solid var(--line); border-radius: 7px; overflow: hidden;
+  margin: 1.75rem 0; font-size: 0.88rem; background: var(--bg);
+}
+.pr-head {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.6rem 0.9rem; background: var(--bg-soft);
+  border-bottom: 1px solid var(--line);
+}
+.pr-avatar {
+  width: 20px; height: 20px; border-radius: 50%; background: var(--fg-strong);
+  color: #fff; font-family: var(--mono); font-size: 0.7rem;
+  display: grid; place-items: center;
+}
+.pr-who { font-weight: 600; color: var(--fg-strong); }
+.pr-when { color: var(--fg-mute); font-size: 0.82rem; }
+.pr-body { padding: 1rem 1.1rem 1.15rem; }
+.pr-title { font-weight: 600; color: var(--fg-strong); margin: 0 0 0.75rem; }
+.pr-warn {
+  border-left: 3px solid var(--likely); padding: 0.5rem 0 0.5rem 0.85rem;
+  margin-bottom: 1rem; color: var(--fg-mute);
+}
+.pr-warn > strong { color: var(--fg-strong); display: block; margin-bottom: 0.3rem; }
+.pr-warn div strong { color: var(--fg-strong); }
+.pr-warn div { font-size: 0.86rem; }
+.pr-sub { margin: 0 0 0.5rem; color: var(--fg-mute); font-size: 0.86rem; }
+.pr-body table { font-size: 0.82rem; }
+.pr-body .table-scroll { margin: 0; }
+
+/* ---------- next steps ---------- */
+
+.next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+@media (max-width: 52rem) { .next { grid-template-columns: 1fr; } }
+.next a { display: block; padding: 1.1rem 1.2rem; background: var(--bg); color: inherit; }
+.next a:hover { background: var(--bg-soft); text-decoration: none; }
+.next .n-step { font-family: var(--mono); font-size: 0.7rem; color: var(--fg-faint); letter-spacing: 0.08em; }
+.next .n-name { display: block; margin: 0.3rem 0 0.2rem; font-weight: 600; color: var(--accent); }
+.next .n-why { font-size: 0.86rem; color: var(--fg-mute); }
+
+/* ---------- on this page ---------- */
+
+.toc {
+  border-left: 2px solid var(--line); padding: 0.1rem 0 0.1rem 1.1rem;
+  margin: 0 0 2.5rem; font-size: 0.88rem;
+}
+.toc .toc-cap {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-faint); display: block;
+  margin-bottom: 0.4rem;
+}
+.toc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.22rem; }
+.toc a { color: var(--fg-mute); }
+.toc a:hover { color: var(--accent); }

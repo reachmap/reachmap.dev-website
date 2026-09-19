@@ -14,6 +14,11 @@ The output is committed, so the site needs no build step to deploy.
 import html
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import diagrams as dia
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSION = "v0.3"
@@ -132,6 +137,20 @@ def anchor_headings(body):
     return re.sub(r"<(h[23])>(.*?)</\1>", repl, body, flags=re.S)
 
 
+def toc(body):
+    """Build an "on this page" list from the h2s already in the body.
+
+    Derived rather than hand-written: a contents list that can fall out of step
+    with the headings is worse than none, because a reader trusts it."""
+    heads = re.findall(r'<h2 id="([^"]+)">(.*?)(?:<a class="anchor")', body, flags=re.S)
+    if len(heads) < 3:
+        return ""   # a three-item list for a two-section page is furniture
+    items = "".join(
+        f'<li><a href="#{hid}">{re.sub(r"<[^>]+>", "", text).strip()}</a></li>'
+        for hid, text in heads)
+    return f'<nav class="toc"><span class="toc-cap">On this page</span><ul>{items}</ul></nav>'
+
+
 def docs_nav(rel, current):
     items = []
     for slug, title, label in DOCS:
@@ -174,6 +193,7 @@ def write(path, text):
 
 def doc_page(slug, title, lede, body, desc):
     rel = "../"
+    anchored = anchor_headings(body)
     return (
         head(f"{title} &middot; Reachmap".replace("&middot;", "·"), desc, rel)
         + header(rel, "docs")
@@ -182,7 +202,8 @@ def doc_page(slug, title, lede, body, desc):
         + '<article class="docs-body">\n'
         + f"<h1>{title}</h1>\n"
         + f'<p class="page-lede">{lede}</p>\n'
-        + anchor_headings(body)
+        + toc(anchored)
+        + anchored
         + page_nav(slug)
         + "</article>\n</main>\n"
         + footer(rel)
@@ -309,53 +330,112 @@ def colorize(text):
 
 # ---------------------------------------------------------------------------
 # Landing page
+#
+# Ordered by what a first-time visitor needs, which is not the order the tool
+# was built in. The advantage of having a dependency map comes first, because
+# someone who is not already convinced of that will not care which detectors
+# exist. Proof, mechanism and installation follow.
 # ---------------------------------------------------------------------------
+
+PAYOFFS = [
+    ("incident", "When something breaks, know who is in it",
+     "A vendor degrades or a region wobbles. Today that starts with a war room and "
+     "a lot of grep. With a map it starts with a list of exactly which services "
+     "touch the thing that broke.",
+     "Which services call Stripe?"),
+    ("change", "Catch the dependency nobody reviewed",
+     "New third-party APIs arrive one pull request at a time, each too small to "
+     "argue about. Nobody decides to depend on eleven vendors; it just happens. A "
+     "diff on every PR makes each one a decision.",
+     "What did this branch just add?"),
+    ("compliance", "Answer the audit question in minutes",
+     "What leaves the cluster, which workloads are in PCI scope, and which cloud "
+     "roles does each service assume. These questions get asked once a year and "
+     "cost a week each time.",
+     "What is in scope, and says who?"),
+    ("migration", "See what a move would actually cost",
+     "Changing region, account or provider is priced by what is pinned to the old "
+     "one. A PVC tied to one availability zone and a hardcoded regional endpoint "
+     "are the same surprise, six months apart.",
+     "What is pinned to us-east-1?"),
+]
+
 
 def landing():
     rel = ""
+    payoffs = "".join(
+        f'''<div class="payoff">{dia.payoff_icon(icon)}
+        <h3>{title}</h3><p>{body}</p><span class="p-q">&ldquo;{q}&rdquo;</span></div>'''
+        for icon, title, body, q in PAYOFFS)
+
     return (
-        head("Reachmap — map what your Kubernetes workloads reach",
-             "A dependency mapper for distributed systems. Reads rendered Kubernetes "
-             "manifests or a live cluster and catalogs every cloud service, internal "
-             "service and third-party API a workload reaches — with the file and line "
-             "behind every claim.", rel)
+        head("Reachmap — know what your workloads depend on",
+             "A dependency mapper for Kubernetes. Catalogs every cloud service, internal "
+             "service and third-party API your workloads reach, so you can answer what "
+             "breaks when something else does — with the file and line behind every claim.", rel)
         + header(rel, "home")
         + f"""<main id="main">
 
 <section class="hero">
   <div class="wrap">
-    <h1>Map what your workloads<br><span class="dim">actually reach.</span></h1>
+    <h1>Know what your workloads<br><span class="dim">depend on.</span></h1>
     <p class="lede">
-      Reachmap reads rendered Kubernetes manifests &mdash; or a live cluster &mdash; and
-      catalogs every <strong>cloud service</strong>, <strong>internal service</strong> and
-      <strong>third-party API</strong> a workload depends on. Every edge carries the file,
-      the line and the field it came from, because the first question anyone asks about a
-      surprising dependency is <em>says who?</em>
+      Every service quietly accumulates dependencies &mdash; a queue, a managed database,
+      four vendor APIs, a cloud role. Nobody wrote them down, and the list only matters
+      on the day one of them breaks. <strong>Reachmap writes it down for you</strong>, from
+      the manifests you already have.
     </p>
     <div class="cta-row">
       <a class="btn btn-primary" href="docs/quickstart.html">Quickstart &rarr;</a>
-      <a class="btn" href="docs/detectors.html">What it detects</a>
+      <a class="btn" href="#what-you-get">See what it produces</a>
       <a class="btn" href="{GH}">Source</a>
     </div>
 
-    {term("reachmap scan", colorize(SCAN_OUTPUT))}
-
-    <p class="sec-intro" style="margin-bottom:0">
-      No agent, no cluster, no credentials. That scan is a directory of YAML and a
-      single static binary.
-    </p>
+    {dia.blast_radius()}
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <div class="sec-label">The problem</div>
+    <div class="sec-label">Why map dependencies</div>
+    <h2>Four questions that are hard today</h2>
+    <p class="sec-intro">
+      None of these need a new tool to <em>ask</em>. They need an answer you can trust
+      without a week of archaeology, and an answer that is still true next month.
+    </p>
+    <div class="payoffs">{payoffs}</div>
+  </div>
+</section>
+
+<section id="what-you-get">
+  <div class="wrap">
+    <div class="sec-label">What you get</div>
+    <h2>A graph, and the evidence behind every edge</h2>
+    <p class="sec-intro">
+      One command over a directory of YAML. Each dependency carries the file, the line and
+      the field it came from &mdash; because the first question anyone asks about a
+      surprising edge is <em>says who?</em>
+    </p>
+
+    {term("reachmap scan", colorize(SCAN_OUTPUT))}
+
+    {dia.reach_graph()}
+
+    <p class="sec-intro" style="margin-bottom:0.5rem">
+      The colours above are the same ones the terminal prints, and they mean this:
+    </p>
+    {dia.legend()}
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Why a grep would not do</div>
     <h2>A pod spec is not the dependency list</h2>
     <p class="sec-intro">
       Most of what a service reaches is written down somewhere other than its container
-      environment &mdash; in an autoscaler, a sidecar argument, a Secret it mounts, or an
-      annotation on its ServiceAccount. Four of Reachmap's detectors exist because those
-      dependencies are otherwise invisible.
+      environment. Four of Reachmap's detectors exist because those dependencies are
+      otherwise invisible &mdash; not hard to find, <em>invisible</em>.
     </p>
     <div class="grid grid-2">
       <div class="cell">
@@ -392,15 +472,34 @@ def landing():
 
 <section>
   <div class="wrap">
+    <div class="sec-label">How it works</div>
+    <h2>Read, resolve, emit</h2>
+    <p class="sec-intro">
+      No agent and no cluster required. A directory of rendered YAML is enough; a live
+      cluster is an option, not a prerequisite.
+    </p>
+    {dia.pipeline()}
+
+    <h2 style="margin-top:3rem; font-size:1.15rem">And it tells you how sure it is</h2>
+    <p class="sec-intro">
+      An edge you disagree with has to be arguable, so confidence is a bucket with a rule
+      behind it rather than a number. &ldquo;0.73&rdquo; is not an argument.
+    </p>
+    {dia.confidence_scale()}
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
     <div class="sec-label">In CI</div>
-    <h2>Gate the pull request that adds a dependency</h2>
+    <h2>Every new dependency becomes a decision</h2>
     <p class="sec-intro">
       Scanning is useful once. Diffing is useful every day. Reachmap compares the graph on a
-      branch against the graph on main and fails the build when a change quietly introduces a
-      new third-party API, a new cloud service, or a dependency nobody has classified.
+      branch against the graph on main and comments on the pull request when a change adds
+      something &mdash; failing the build only if you ask it to.
     </p>
 
-    {term("reachmap diff", colorize(DIFF_OUTPUT))}
+    {dia.pr_comment_mock(PR_TABLE)}
 
     <div class="grid grid-3">
       <div class="cell">
@@ -420,40 +519,7 @@ def landing():
         and Backstage catalog entities for everything downstream.</p>
       </div>
     </div>
-    <p style="margin-top:1.5rem"><a href="docs/ci.html">Set up the gate &rarr;</a></p>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="sec-label">Design</div>
-    <h2>Three decisions that shape everything else</h2>
-    <div class="grid grid-3">
-      <div class="cell">
-        <h3>Every edge carries its evidence</h3>
-        <p>File, line, field, and the redacted snippet it came from. A tool that cannot answer
-        <em>says who?</em> gets abandoned the first time it surprises someone. Credentials are
-        stripped at parse time, before anything reaches the graph.</p>
-      </div>
-      <div class="cell">
-        <h3>Precision over recall</h3>
-        <p>A graph people believe beats a graph that is complete. <code>LOG_LEVEL=info</code> does
-        not become a dependency on a service called &ldquo;info&rdquo;. Bare tokens count only when
-        the key they sit under says so.</p>
-      </div>
-      <div class="cell">
-        <h3>Confidence is a bucket, not a float</h3>
-        <p><code>confirmed</code> / <code>likely</code> / <code>possible</code>. An edge a user
-        disagrees with has to be arguable, and &ldquo;0.73&rdquo; is not an argument.</p>
-      </div>
-    </div>
-
-    <div class="note">
-      <strong>Blind spots are counted, not hidden.</strong> When a connection string lives in a
-      Secret that nothing in the scan describes, Reachmap records that a dependency exists and
-      that it cannot see the target. A blind spot you can count is one you can argue about.
-      Cluster mode does not change this: it never reads Secrets either.
-    </div>
+    <p style="margin-top:1.75rem"><a href="docs/ci.html">Set up the gate &rarr;</a></p>
   </div>
 </section>
 
@@ -462,14 +528,11 @@ def landing():
     <div class="sec-label">Install</div>
     <h2>One binary, one vendored dependency</h2>
     <p class="sec-intro">
-      Reachmap is Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds
-      offline, audits in an afternoon and ships as one static binary.
+      Go with a single vendored dependency &mdash; a YAML parser &mdash; so it builds offline,
+      audits in an afternoon and ships as one static binary.
     </p>
 
-    {term("build from source", colorize('''$ git clone https://github.com/reachmap/reachmap.dev
-$ cd reachmap.dev
-$ go build -mod=vendor -o reachmap ./cmd/reachmap
-$ ./reachmap scan ./manifests'''))}
+    {term("build from source", colorize(BUILD_CMDS))}
 
     <div class="note warn">
       <strong>A note on <code>go install</code>.</strong> The module path is
@@ -483,33 +546,12 @@ $ ./reachmap scan ./manifests'''))}
 
 <section>
   <div class="wrap">
-    <div class="sec-label">Roadmap</div>
-    <h2>Where this is going</h2>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>Phase</th><th>Scope</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td><code>v0.1</code></td><td>Manifest detectors, endpoint catalog, ARN/DSN parsers, JSON + Mermaid + text</td><td>Shipped</td></tr>
-          <tr><td><code>v0.2</code></td><td><code>diff</code>, <code>policy check</code>, SARIF/DOT/Backstage exporters, GitHub Action</td><td>Shipped</td></tr>
-          <tr><td><code>v0.3</code></td><td>Mesh, KEDA, cloud resource CRs, External Secrets, workload identity, storage, registries; live cluster mode; full GCP + Azure</td><td>Shipped</td></tr>
-          <tr><td><code>v0.4</code></td><td>IAM policy expansion &mdash; resolve an identity into the resources it may reach</td><td>Next</td></tr>
-          <tr><td><code>v0.5</code></td><td>Runtime adapters (Hubble, Coroot, OTel, VPC/DNS logs); shadow and stale reports</td><td>Planned</td></tr>
-          <tr><td><code>v0.6</code></td><td>Source-code scanning: Go, Java, Python, Node</td><td>Planned</td></tr>
-          <tr><td><code>v1.0</code></td><td>Blast-radius traversal with criticality, environment diffing, <code>reachmap serve</code></td><td>Planned</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
     <div class="sec-label">Known limits</div>
     <h2>Stated plainly</h2>
     <p class="sec-intro">
       A tool that overclaims here loses trust the first time it is wrong.
     </p>
-    <ul style="color:var(--fg-mute); max-width:46rem; line-height:1.8">
+    <ul style="color:var(--fg-mute); max-width:44rem; line-height:1.8">
       <li><strong>Secrets.</strong> A connection string in a Secret is invisible unless something in
       the scan describes that Secret. Reachmap does not read Secrets, in cluster mode either.</li>
       <li><strong>Dynamically constructed endpoints.</strong>
@@ -519,6 +561,30 @@ $ ./reachmap scan ./manifests'''))}
       <li><strong>Permitted reach is not observed reach.</strong> Mesh and network-policy edges say a
       workload <em>may</em> reach something. Proving it does needs runtime data.</li>
     </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">Start here</div>
+    <h2>Three steps, in order</h2>
+    <div class="next">
+      <a href="docs/quickstart.html">
+        <span class="n-step">01</span>
+        <span class="n-name">Scan a directory</span>
+        <span class="n-why">Build it and point it at rendered manifests. Ten minutes.</span>
+      </a>
+      <a href="docs/detectors.html">
+        <span class="n-step">02</span>
+        <span class="n-name">Check what it found</span>
+        <span class="n-why">Read the detector table and triage the unclassified endpoints.</span>
+      </a>
+      <a href="docs/ci.html">
+        <span class="n-step">03</span>
+        <span class="n-name">Put it on every PR</span>
+        <span class="n-why">Diff against main and comment. This is what makes it stick.</span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -565,6 +631,10 @@ organised around them.</p>
 datastores, cloud resources, external APIs, cloud identities, and opaque secret references.
 Edges carry a relation, a protocol and port where known, a confidence bucket, and one or
 more pieces of evidence.</p>
+
+{dia.reach_graph()}
+
+{dia.legend()}
 
 <h3>Node kinds</h3>
 <div class="table-scroll">
@@ -761,10 +831,81 @@ jobs:
         run: exit 1"""
 
 
+BUILD_CMDS = """$ git clone https://github.com/reachmap/reachmap.dev
+$ cd reachmap.dev
+$ go build -mod=vendor -o reachmap ./cmd/reachmap
+$ ./reachmap scan ./manifests"""
+
+# The table the markdown diff emits, rendered as the comment would render it.
+PR_TABLE = """<div class="table-scroll"><table>
+  <thead><tr><th>Workload</th><th>Now reaches</th><th>What it is</th><th>Confidence</th><th>Declared at</th></tr></thead>
+  <tbody><tr>
+    <td><code>shop/orders</code></td>
+    <td><strong>api.riskscore.io</strong></td>
+    <td>external API &middot; <strong>unclassified</strong></td>
+    <td>possible</td>
+    <td><code>orders.yaml:37</code></td>
+  </tr></tbody>
+</table></div>"""
+
+
+GATE_WORKFLOW = """name: Dependency gate
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  reachmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # the diff needs the base commit
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - id: reachmap
+        uses: reachmap/reachmap.dev@v0
+        continue-on-error: true   # comment first, fail the job at the end
+        with:
+          path: manifests
+          base-ref: origin/${{ github.base_ref }}
+          environment: prod
+          fail-on: new-external,new-unclassified,new-compliance
+
+      - name: Comment on the pull request
+        if: always() && hashFiles('reachmap-out/diff.md') != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: reachmap
+          path: reachmap-out/diff.md
+
+      - name: Upload policy findings
+        if: always() && hashFiles('reachmap-out/policy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reachmap-out/policy.sarif
+          category: reachmap-policy
+
+      - name: Fail if a gate tripped
+        if: steps.reachmap.outcome == 'failure'
+        run: exit 1"""
+
+
 def docs_detectors():
     body = f"""
 <p>A detector is one signal Reachmap reads. Each one is named in the evidence on every edge
 it produces, so an edge you disagree with can be traced to the exact rule that made it.</p>
+
+<p>Half of these surfaces are not in the pod spec, which is the reason the list is as long
+as it is:</p>
+
+{dia.detector_surfaces()}
 
 <h2>Layer 0 &mdash; rendered manifests</h2>
 <p>No cluster, no credentials, no network. This is the layer that runs on a pull request.</p>
@@ -817,6 +958,10 @@ people learn to ignore.</p>
 <p>Only <code>/32</code> and <code>/128</code> are specific enough to name a dependency. A
 <code>10.0.0.0/8</code> egress rule describes a network boundary, not a thing something
 depends on.</p>
+
+<h2>The three confidence buckets</h2>
+
+{dia.confidence_scale()}
 
 <h2>Resolving a secret without reading it</h2>
 <p>A workload mounting <code>orders-db-creds</code> is, on its own, an
@@ -874,6 +1019,9 @@ $ reachmap scan @cluster -context prod-eu -namespace payments
 $ reachmap scan @cluster -namespace payments -namespace checkout -format json -o prod.json'''))}
 
 <h2>It never reads Secrets</h2>
+
+{dia.secrets_boundary()}
+
 <div class="note">
 This is a product invariant, not a default. Reachmap records that a secret-borne dependency
 exists and resolves it through the objects that <em>describe</em> the Secret &mdash; a cloud
@@ -975,6 +1123,8 @@ def docs_ci():
 <p>Scanning tells you what you have. Diffing tells you what a change is about to add, which
 is the thing you can still do something about.</p>
 
+{dia.gate_flow()}
+
 <h2>Diff two graphs</h2>
 {term("reachmap diff", colorize(DIFF_OUTPUT))}
 
@@ -1004,6 +1154,10 @@ dependencies.</p>
 
 <p>A good first gate is <code>new-external,new-unclassified</code>: it catches the two changes
 a reviewer most wants to be told about and almost never fires on routine work.</p>
+
+<h3>What the comment looks like</h3>
+
+{dia.pr_comment_mock(PR_TABLE)}
 
 <h3>Formats</h3>
 <p><code>-format markdown</code> is shaped as a pull-request comment.
