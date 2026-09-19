@@ -144,37 +144,124 @@ def payoff_icon(name):
 # Landing / docs: what a scan produces, and what the colours mean
 # ---------------------------------------------------------------------------
 
-def reach_graph():
-    """The graph a scan produces, colour-keyed to the terminal output.
+# The seven dependencies below are the real scan of testdata/fixtures/platform,
+# with the protocol, confidence, relation and evidence locator the tool actually
+# printed. Re-capture rather than edit if the output changes.
+REACH = [
+    ("cloud", "CLOUD RESOURCES", [
+        ("aws rds ingestor-db", "database · likely", "likely", "platform.yaml:32"),
+        ("aws sqs events-inbound", "queue · https · likely", "likely", "platform.yaml:104"),
+        ("gcp sql analytics-primary", "database · postgres · confirmed", "conf", "platform.yaml:46"),
+    ]),
+    ("ext", "THIRD-PARTY APIS", [
+        ("Stripe", "payments · pci · allowed", "likely", "platform.yaml:116"),
+        ("HashiCorp Vault", "secrets · confirmed", "conf", "platform.yaml:83"),
+    ]),
+    ("ident", "CLOUD IDENTITY", [
+        ("iam-role platform-ingestor", "assumed via IRSA · confirmed", "conf", "platform.yaml:10"),
+    ]),
+    ("opaque", "UNRESOLVED", [
+        ("secret ingestor-api-creds", "target unknown · possible", "poss", "platform.yaml:37"),
+    ]),
+]
 
-    Doubles as the legend for the scan output above it — which is the point.
-    Before this, a visitor met coloured [cloud] and [opaque] tags with no key."""
-    targets = [
-        ("aws rds ingestor-db", 14, "cloud", "database"),
-        ("aws sqs events-inbound", 62, "cloud", "queue"),
-        ("gcp sql analytics-primary", 110, "cloud", "database"),
-        ("Stripe", 158, "ext", "third-party API"),
-        ("HashiCorp Vault", 206, "ext", "third-party API"),
-        ("iam-role platform-ingestor", 254, "ident", "cloud identity"),
-        ("secret ingestor-api-creds", 302, "opaque", "target unknown"),
-    ]
+
+def reach_graph():
+    """The graph a scan produces.
+
+    The first version of this drew seven identical boxes in a flat stack with a
+    fan of edges, and it carried *less* information than the terminal output
+    sitting directly above it on the page — name and category, where the text
+    had protocol, port, confidence, compliance scope and the file and line. A
+    picture that restates less than the paragraph above it is decoration, and
+    the reader learns to skip the next one.
+
+    So it now shows the three things the text shows and a list cannot:
+
+      * Structure. Targets are grouped by kind behind a coloured rail with a
+        count, which is the taxonomy the legend underneath is trying to teach.
+        The old version encoded kind as a 1px border colour and nothing else.
+      * Confidence, in the edge itself — weight for confirmed against likely,
+        dashed for possible — with a key in what used to be dead space.
+      * Evidence. Every edge gets its file and line in a column of its own,
+        because "every edge carries its evidence" is the product's central
+        claim and the diagram may as well demonstrate it rather than assert it.
+    """
+    ORIGIN_X, ORIGIN_Y = 250, 207
+    RAIL_X, NODE_X, NODE_W, EV_X = 388, 404, 316, 736
+    ROW_H, ROW_GAP, GROUP_GAP = 40, 6, 32
+
     b = ['<g>']
-    for _, y, kind, _ in targets:
-        b.append(_edge(264, 176, 392, y + 17, f"e-line e-{kind}"))
-    b.append(_box(24, 158, 240, 36, "platform/ingestor", "workload", rx=5))
-    b.append('<text x="24" y="146" class="d-cap">WORKLOAD</text>')
-    b.append('<text x="392" y="10" class="d-cap">WHAT IT REACHES</text>')
-    for name, y, kind, sub in targets:
-        b.append(_box(392, y, 300, 36, name, kind, sub=sub))
+    edges, groups = [], []
+    y = 20
+    for kind, label, rows in REACH:
+        top = y
+        for name, sub, conf, ev in rows:
+            edges.append((y + ROW_H / 2, kind, conf))
+            groups.append(("node", y, kind, name, sub, ev))
+            y += ROW_H + ROW_GAP
+        bottom = y - ROW_GAP
+        groups.append(("rail", top, kind, label, len(rows), bottom))
+        y = bottom + GROUP_GAP
+
+    # edges first, so nodes and rails sit on top of them
+    for ey, kind, conf in edges:
+        b.append(_edge(ORIGIN_X, ORIGIN_Y, RAIL_X - 2, ey, f"rg-edge rg-{conf} e-{kind}"))
+
+    for item in groups:
+        if item[0] == "rail":
+            _, top, kind, label, count, bottom = item
+            b.append(f'<rect x="{RAIL_X}" y="{top}" width="2.5" height="{bottom - top}" '
+                     f'rx="1.25" class="rg-rail rg-{kind}"/>')
+            b.append(f'<text x="{NODE_X}" y="{top - 8}" class="rg-cap rg-{kind}">'
+                     f'{html.escape(label)} &middot; {count}</text>')
+        else:
+            _, ny, kind, name, sub, ev = item
+            b.append(f'<rect x="{NODE_X}" y="{ny}" width="{NODE_W}" height="{ROW_H}" rx="5" '
+                     f'class="rg-node rg-{kind}"/>')
+            b.append(f'<text x="{NODE_X + 14}" y="{ny + 17}" class="rg-name rg-{kind}">'
+                     f'{html.escape(name)}</text>')
+            b.append(f'<text x="{NODE_X + 14}" y="{ny + 31}" class="rg-sub">{html.escape(sub)}</text>')
+            b.append(f'<text x="{EV_X}" y="{ny + 25}" class="rg-ev">{html.escape(ev)}</text>')
+
+    b.append(f'<text x="{EV_X}" y="12" class="rg-cap rg-ev-cap">EVIDENCE</text>')
+
+    # Top-left was empty, and the diagram floated free of the command that
+    # produced it. Naming the input grounds it and balances the column, which
+    # now reads top to bottom: what was scanned, the workload, how to read the
+    # edges.
+    b.append('<text x="0" y="14" class="rg-cap">SCANNED</text>')
+    b.append('<text x="0" y="40" class="rg-src">./manifests</text>')
+    b.append('<text x="0" y="60" class="rg-key">1 file &middot; 10 objects &middot; 1 workload</text>')
+
+    # the subject of the graph, weighted as such
+    b.append('<text x="0" y="166" class="rg-cap">WORKLOAD</text>')
+    b.append(f'<rect x="0" y="176" width="250" height="62" rx="6" class="rg-wl"/>')
+    b.append('<text x="18" y="203" class="rg-wl-name">platform/ingestor</text>')
+    b.append('<text x="18" y="221" class="rg-wl-sub">Deployment &middot; 7 dependencies</text>')
+
+    # the key, in what used to be an empty quadrant
+    b.append('<text x="0" y="300" class="rg-cap">EDGE</text>')
+    for i, (cls, label) in enumerate((("conf", "confirmed — the manifest names it"),
+                                      ("likely", "likely — matched a catalog rule"),
+                                      ("poss", "possible — target not named"))):
+        ky = 318 + i * 22
+        b.append(f'<line x1="0" y1="{ky}" x2="30" y2="{ky}" class="rg-edge rg-{cls} rg-key-line"/>')
+        b.append(f'<text x="42" y="{ky + 4}" class="rg-key">{html.escape(label)}</text>')
+
     b.append('</g>')
+
     return figure(
-        _svg(720, 350,
+        _svg(900, 424,
              "The reach graph a scan produces",
-             "The workload platform/ingestor on the left, connected to seven targets on the "
-             "right: three cloud resources, two third-party APIs, one cloud identity, and one "
-             "unresolved secret reference. Each target is coloured by kind.",
+             "The workload platform/ingestor on the left connects to seven targets, grouped "
+             "by kind: three cloud resources, two third-party APIs, one cloud identity, and "
+             "one unresolved secret reference. Each target shows its category, protocol and "
+             "confidence, and each carries the file and line it was found at. Edge weight "
+             "shows confidence: heavier for confirmed, lighter for likely, dashed where the "
+             "target could not be named.",
              "".join(b)),
-        min_width=660)
+        min_width=740)
 
 
 def legend_rows():

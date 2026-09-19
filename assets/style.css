@@ -769,3 +769,68 @@ h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
 /* A legend under a full-width graph has room for two columns. */
 .legend-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.5rem; }
 @media (max-width: 52rem) { .legend-wide { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- reach graph ----------
+   Its own type scale rather than the shared diagram one: this drawing carries
+   four columns of information and runs at about 0.82 of its viewBox in the
+   docs column, so the shared 11px caption would land at 9px and the evidence
+   column below that. Sizes here are chosen so nothing renders under 9px at the
+   narrowest width the figure is allowed to reach. */
+
+.rg-cap {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.09em;
+  fill: var(--fg-faint);
+}
+.rg-cap.rg-cloud  { fill: var(--cloud); }
+.rg-cap.rg-ext    { fill: var(--external); }
+.rg-cap.rg-ident  { fill: var(--identity); }
+.rg-cap.rg-opaque { fill: var(--opaque); }
+
+.rg-rail { fill: var(--line); }
+.rg-rail.rg-cloud  { fill: var(--cloud); }
+.rg-rail.rg-ext    { fill: var(--external); }
+.rg-rail.rg-ident  { fill: var(--identity); }
+.rg-rail.rg-opaque { fill: var(--opaque); }
+
+/* The node is a tinted field with no border. The old 1px coloured outline was
+   the only thing carrying kind, and at a 1px stroke that is not a signal. */
+.rg-node { fill: var(--bg-soft); stroke: none; }
+.rg-node.rg-cloud  { fill: var(--tint-blue); }
+.rg-node.rg-ext    { fill: var(--tint-purple); }
+.rg-node.rg-ident  { fill: var(--tint-green); }
+.rg-node.rg-opaque { fill: var(--tint-clay); }
+
+.rg-name { font-family: var(--mono); font-size: 12.5px; fill: var(--fg-strong); }
+.rg-name.rg-cloud  { fill: var(--cloud); }
+.rg-name.rg-ext    { fill: var(--external); }
+.rg-name.rg-ident  { fill: var(--identity); }
+.rg-name.rg-opaque { fill: var(--opaque); }
+.rg-sub { font-family: var(--sans); font-size: 11.5px; fill: var(--fg-mute); }
+.rg-ev  { font-family: var(--mono); font-size: 11px; fill: var(--fg-faint); }
+.rg-ev-cap { fill: var(--fg-faint); }
+
+.rg-wl { fill: var(--fg-strong); }
+.rg-wl-name { font-family: var(--mono); font-size: 14px; fill: #fff; }
+.rg-wl-sub  { font-family: var(--sans); font-size: 11.5px; fill: #aab2bd; }
+
+/* Confidence lives in the stroke: heavier when the manifest names the target
+   outright, lighter when a catalog rule matched, dashed when nothing names it. */
+.rg-edge { fill: none; stroke: var(--line); }
+.rg-edge.rg-conf   { stroke-width: 2; opacity: .85; }
+.rg-edge.rg-likely { stroke-width: 1.2; opacity: .6; }
+.rg-edge.rg-poss   { stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .7; }
+.rg-edge.e-cloud  { stroke: var(--cloud); }
+.rg-edge.e-ext    { stroke: var(--external); }
+.rg-edge.e-ident  { stroke: var(--identity); }
+.rg-edge.e-opaque { stroke: var(--opaque); }
+.rg-key-line { stroke: var(--fg-faint); }
+.rg-key { font-family: var(--sans); font-size: 11.5px; fill: var(--fg-mute); }
+
+/* The 44rem cap on .docs-body is a measure for prose; a dense figure can use
+   the whole grid column. Only above 68rem, which is where the column is
+   actually wide enough — below that the figure would push past the column and
+   take the page sideways with it, which is worse than a short scroll. */
+@media (min-width: 68rem) {
+  .docs-body .dia { width: calc(100% + 3rem); max-width: none; }
+}
+.rg-src { font-family: var(--mono); font-size: 13px; fill: var(--fg-strong); }
